@@ -206,3 +206,12 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 .env
+archive/
+backend/venv/
+backend/.env
+backend/__pycache__/
+backend/*.pyc
+backend/results_*.json
+frontend/node_modules/
+frontend/build/
+.DS_Store
