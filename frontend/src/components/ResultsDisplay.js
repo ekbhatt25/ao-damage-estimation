@@ -10,8 +10,8 @@ const ResultsDisplay = ({ results, onReset }) => {
         recommendation: "Replace bumper cover and repaint."
     };
 
-    // Use passed results if available, otherwise fallback to mock (or empty if it's dynamic)
-    const data = results || mockData;
+    const data = results;
+    if (!data) return null;
 
     return (
         <motion.div

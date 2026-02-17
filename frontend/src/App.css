@@ -1,25 +1,121 @@
-/* App-specific styles if needed, mostly using Tailwind */
-.glass-panel {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.App {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #084477 0%, #0a5694 50%, #084477 100%);
+  padding: 40px 20px;
 }
 
-@keyframes float {
-  0% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
-
-  100% {
-    transform: translateY(0px);
-  }
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 10px 40px rgba(8, 68, 119, 0.3);
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
+h1 {
+  color:#333;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  color: #666;
+  margin-bottom: 30px;
+}
+
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.file-label {
+  display: inline-block;
+  padding: 12px 24px;
+  background: #084477;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.3s;
+}
+
+.file-label:hover {
+  background: #0a5694;
+}
+
+.preview {
+  width: 100%;
+  max-height: 300px;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 2px solid #eee;
+}
+
+.preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.analyze-button {
+  padding: 14px 28px;
+  background: #084477;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.analyze-button:hover:not(:disabled) {
+  background: #0a5694;
+}
+
+.analyze-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.results {
+  margin-top: 30px;
+  padding: 20px;
+  background: #f7fafc;
+  border-radius: 8px;
+  border-left: 4px solid #084477;
+}
+
+.results h2 {
+  margin-top: 0;
+  color: #084477;
+}
+
+.results ul {
+  list-style: none;
+  padding: 0;
+  margin: 15px 0 0 0;
+}
+
+.results li {
+  padding: 12px;
+  margin-bottom: 8px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.part-name {
+  font-weight: 600;
+  color: #084477;
+}
+
+.error {
+  margin-top: 20px;
+  padding: 15px;
+  background: #fed7d7;
+  color: #c53030;
+  border-radius: 6px;
+  border-left: 4px solid #c53030;
 }
