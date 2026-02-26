@@ -212,6 +212,7 @@ backend/.env
 backend/__pycache__/
 backend/*.pyc
 backend/results_*.json
+backend/*_results.txt
 frontend/node_modules/
 frontend/build/
 .DS_Store
