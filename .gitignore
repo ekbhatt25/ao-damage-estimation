@@ -82,6 +82,9 @@ target/
 profile_default/
 ipython_config.py
 
+# carsons folder:
+data/
+
 # pyenv
 #   For a library or package, you might want to ignore these files since the code is
 #   intended to run in multiple environments; otherwise, check them in:
@@ -216,3 +219,9 @@ backend/*_results.txt
 frontend/node_modules/
 frontend/build/
 .DS_Store
+
+# Claude Code internal files
+.claude/
+
+# Model weights (large binaries — use Git LFS if you need to version these)
+models/*.pth

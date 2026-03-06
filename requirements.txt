@@ -1,3 +1,6 @@
+# Mask R-CNN pipeline (install torch/torchvision via: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124)
+opencv-python-headless==4.13.0.92
+pycocotools==2.0.11
 altair==5.5.0
 annotated-types==0.7.0
 anthropic==0.79.0

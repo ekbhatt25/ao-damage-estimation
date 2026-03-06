@@ -1,0 +1,85 @@
+{
+  "mode": "damage",
+  "map": {
+    "mAP": 0.03952048287198409,
+    "mAP_50": 0.08215970995204036,
+    "mAP_75": 0.034598456464771436,
+    "mAP_small": 0.015269407462362779,
+    "mAP_med": 0.037057481462723474,
+    "mAP_large": 0.06811416840629012
+  },
+  "per_class": [
+    {
+      "class": "Broken part",
+      "precision": 0.1184,
+      "recall": 0.3077,
+      "f1": 0.171,
+      "n_gt": 299,
+      "n_pred": 503
+    },
+    {
+      "class": "Corrosion",
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "n_gt": 51,
+      "n_pred": 0
+    },
+    {
+      "class": "Cracked",
+      "precision": 0.0495,
+      "recall": 0.0476,
+      "f1": 0.0485,
+      "n_gt": 21,
+      "n_pred": 2
+    },
+    {
+      "class": "Dent",
+      "precision": 0.0995,
+      "recall": 0.1947,
+      "f1": 0.1317,
+      "n_gt": 375,
+      "n_pred": 330
+    },
+    {
+      "class": "Flaking",
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "n_gt": 44,
+      "n_pred": 0
+    },
+    {
+      "class": "Missing part",
+      "precision": 0.3742,
+      "recall": 0.474,
+      "f1": 0.4182,
+      "n_gt": 154,
+      "n_pred": 157
+    },
+    {
+      "class": "Paint chip",
+      "precision": 0.0052,
+      "recall": 0.0135,
+      "f1": 0.0075,
+      "n_gt": 370,
+      "n_pred": 24
+    },
+    {
+      "class": "Scratch",
+      "precision": 0.0105,
+      "recall": 0.0338,
+      "f1": 0.016,
+      "n_gt": 592,
+      "n_pred": 197
+    }
+  ],
+  "latency": {
+    "mean_ms": 384.11,
+    "std_ms": 45.25,
+    "p50_ms": 399.02,
+    "p95_ms": 439.16,
+    "p99_ms": 444.82,
+    "n_runs": 30
+  }
+}

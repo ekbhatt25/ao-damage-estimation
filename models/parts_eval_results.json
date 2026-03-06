@@ -1,0 +1,189 @@
+{
+  "mode": "parts",
+  "map": {
+    "mAP": 0.506984624960434,
+    "mAP_50": 0.7854611944600609,
+    "mAP_75": 0.5591980878002013,
+    "mAP_small": 0.0876839624143682,
+    "mAP_med": 0.36731490206383355,
+    "mAP_large": 0.5649548655672828
+  },
+  "per_class": [
+    {
+      "class": "Back-bumper",
+      "precision": 0.6843,
+      "recall": 0.7126,
+      "f1": 0.6982,
+      "n_gt": 87,
+      "n_pred": 84
+    },
+    {
+      "class": "Back-door",
+      "precision": 0.875,
+      "recall": 0.9067,
+      "f1": 0.8906,
+      "n_gt": 150,
+      "n_pred": 191
+    },
+    {
+      "class": "Back-wheel",
+      "precision": 0.8717,
+      "recall": 0.9096,
+      "f1": 0.8902,
+      "n_gt": 177,
+      "n_pred": 213
+    },
+    {
+      "class": "Back-window",
+      "precision": 0.8543,
+      "recall": 0.902,
+      "f1": 0.8775,
+      "n_gt": 245,
+      "n_pred": 312
+    },
+    {
+      "class": "Back-windshield",
+      "precision": 0.767,
+      "recall": 0.7736,
+      "f1": 0.7703,
+      "n_gt": 53,
+      "n_pred": 51
+    },
+    {
+      "class": "Fender",
+      "precision": 0.8715,
+      "recall": 0.8854,
+      "f1": 0.8784,
+      "n_gt": 192,
+      "n_pred": 207
+    },
+    {
+      "class": "Front-bumper",
+      "precision": 0.8772,
+      "recall": 0.8973,
+      "f1": 0.8871,
+      "n_gt": 146,
+      "n_pred": 152
+    },
+    {
+      "class": "Front-door",
+      "precision": 0.9473,
+      "recall": 0.9572,
+      "f1": 0.9522,
+      "n_gt": 187,
+      "n_pred": 223
+    },
+    {
+      "class": "Front-wheel",
+      "precision": 0.8934,
+      "recall": 0.9613,
+      "f1": 0.9261,
+      "n_gt": 181,
+      "n_pred": 231
+    },
+    {
+      "class": "Front-window",
+      "precision": 0.8316,
+      "recall": 0.9067,
+      "f1": 0.8675,
+      "n_gt": 193,
+      "n_pred": 244
+    },
+    {
+      "class": "Grille",
+      "precision": 0.6639,
+      "recall": 0.7479,
+      "f1": 0.7034,
+      "n_gt": 119,
+      "n_pred": 151
+    },
+    {
+      "class": "Headlight",
+      "precision": 0.7882,
+      "recall": 0.8042,
+      "f1": 0.7961,
+      "n_gt": 189,
+      "n_pred": 216
+    },
+    {
+      "class": "Hood",
+      "precision": 0.8951,
+      "recall": 0.906,
+      "f1": 0.9005,
+      "n_gt": 149,
+      "n_pred": 161
+    },
+    {
+      "class": "License-plate",
+      "precision": 0.682,
+      "recall": 0.7792,
+      "f1": 0.7273,
+      "n_gt": 77,
+      "n_pred": 88
+    },
+    {
+      "class": "Mirror",
+      "precision": 0.8506,
+      "recall": 0.8776,
+      "f1": 0.8639,
+      "n_gt": 196,
+      "n_pred": 214
+    },
+    {
+      "class": "Quarter-panel",
+      "precision": 0.7007,
+      "recall": 0.8024,
+      "f1": 0.7481,
+      "n_gt": 167,
+      "n_pred": 246
+    },
+    {
+      "class": "Rocker-panel",
+      "precision": 0.6544,
+      "recall": 0.7865,
+      "f1": 0.7144,
+      "n_gt": 178,
+      "n_pred": 207
+    },
+    {
+      "class": "Roof",
+      "precision": 0.7863,
+      "recall": 0.8438,
+      "f1": 0.814,
+      "n_gt": 160,
+      "n_pred": 186
+    },
+    {
+      "class": "Tail-light",
+      "precision": 0.6854,
+      "recall": 0.7576,
+      "f1": 0.7197,
+      "n_gt": 132,
+      "n_pred": 146
+    },
+    {
+      "class": "Trunk",
+      "precision": 0.3971,
+      "recall": 0.5301,
+      "f1": 0.4541,
+      "n_gt": 83,
+      "n_pred": 85
+    },
+    {
+      "class": "Windshield",
+      "precision": 0.9178,
+      "recall": 0.9237,
+      "f1": 0.9207,
+      "n_gt": 131,
+      "n_pred": 150
+    }
+  ],
+  "latency": {
+    "mean_ms": 412.09,
+    "std_ms": 26.71,
+    "p50_ms": 416.31,
+    "p95_ms": 444.15,
+    "p99_ms": 459.67,
+    "n_runs": 30
+  }
+}
