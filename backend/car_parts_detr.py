@@ -53,13 +53,14 @@ ANN_DIR = os.path.join(PARTS_ROOT, "ann")
 OUTPUT_DIR = "C:/Users/denni/Documents/MSDS_MSU/ao-damage-estimation"
 
 # Training hyperparameters
-BATCH_SIZE = 4
-LEARNING_RATE = 1e-4
-NUM_EPOCHS = 20
-SUBSET_SIZE = 200  # Set to None to use full dataset
-CONFIDENCE_THRESHOLD = 0.15  # Lower threshold since fine-tuning is limited
+BATCH_SIZE = 2  # Reduced for GPU memory with unfrozen backbone
+LEARNING_RATE_BACKBONE = 1e-5  # Lower LR for pretrained backbone
+LEARNING_RATE_HEAD = 1e-4  # Higher LR for randomly initialized head
+NUM_EPOCHS = 150
+SUBSET_SIZE = None  # None = use full dataset
+CONFIDENCE_THRESHOLD = 0.5
 IOU_THRESHOLD = 0.5
-EARLY_STOPPING_PATIENCE = 3  # Stop if no improvement for this many epochs
+EARLY_STOPPING_PATIENCE = 15  # More patience for full training
 TEST_SPLIT = 0.2
 RANDOM_SEED = 42
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -381,26 +382,33 @@ def collate_fn(batch):
 # =============================================================================
 # STEP 5: TRAINING
 # =============================================================================
-def train_one_epoch(model, dataloader, optimizer, device):
-    """Run one training epoch. Returns average loss."""
+def train_one_epoch(model, dataloader, optimizer, device, accumulation_steps=4):
+    """
+    Run one training epoch with gradient accumulation.
+    Effective batch size = BATCH_SIZE * accumulation_steps.
+    Returns average loss.
+    """
     model.train()
     total_loss = 0.0
     num_batches = 0
+    optimizer.zero_grad()
 
-    for pixel_values, pixel_mask, labels in tqdm(dataloader, desc="  Training"):
+    for batch_idx, (pixel_values, pixel_mask, labels) in enumerate(tqdm(dataloader, desc="  Training")):
         pixel_values = pixel_values.to(device)
         pixel_mask = pixel_mask.to(device)
         labels = [{k: v.to(device) for k, v in t.items()} for t in labels]
 
         outputs = model(pixel_values=pixel_values, pixel_mask=pixel_mask, labels=labels)
-        loss = outputs.loss
+        loss = outputs.loss / accumulation_steps  # Scale loss by accumulation steps
 
-        optimizer.zero_grad()
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.1)
-        optimizer.step()
 
-        total_loss += loss.item()
+        if (batch_idx + 1) % accumulation_steps == 0 or (batch_idx + 1) == len(dataloader):
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.1)
+            optimizer.step()
+            optimizer.zero_grad()
+
+        total_loss += loss.item() * accumulation_steps  # Unscale for logging
         num_batches += 1
 
     return total_loss / max(num_batches, 1)
@@ -677,14 +685,10 @@ def main():
     model.to(DEVICE)
     print(f"  Model loaded with {num_classes} output classes (including background).")
 
-    # Freeze the backbone (ResNet-50) so only the transformer decoder and
-    # classification/bbox heads are trained. This dramatically speeds up
-    # training and produces better results with limited epochs/data.
-    for param in model.model.backbone.parameters():
-        param.requires_grad = False
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"  Frozen backbone. Training {trainable_params:,} / {total_params:,} parameters.")
+    # All parameters are trainable (backbone unfrozen for full fine-tuning)
+    # Use differential learning rates: lower for pretrained backbone, higher for head
+    trainable_params = sum(p.numel() for p in model.parameters())
+    print(f"  Full fine-tuning: all {trainable_params:,} parameters are trainable.")
 
     # ---- Step 4: Create datasets and dataloaders ----
     print("\n[4/6] Building datasets...")
@@ -725,12 +729,30 @@ def main():
     )
 
     # ---- Step 5: Training loop ----
-    print(f"\n[5/6] Training for {NUM_EPOCHS} epochs...")
+    print(f"\n[5/6] Training for up to {NUM_EPOCHS} epochs (early stopping patience={EARLY_STOPPING_PATIENCE})...")
+
+    # Differential learning rates: backbone gets lower LR to preserve pretrained features,
+    # head/decoder gets higher LR since the classification head is randomly initialized
+    backbone_params = []
+    head_params = []
+    for name, param in model.named_parameters():
+        if "backbone" in name:
+            backbone_params.append(param)
+        else:
+            head_params.append(param)
+
     optimizer = torch.optim.AdamW(
-        filter(lambda p: p.requires_grad, model.parameters()),
-        lr=LEARNING_RATE, weight_decay=1e-4
+        [
+            {"params": backbone_params, "lr": LEARNING_RATE_BACKBONE},
+            {"params": head_params, "lr": LEARNING_RATE_HEAD},
+        ],
+        weight_decay=1e-4,
     )
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    print(f"  Backbone params: {sum(p.numel() for p in backbone_params):,} (lr={LEARNING_RATE_BACKBONE})")
+    print(f"  Head params:     {sum(p.numel() for p in head_params):,} (lr={LEARNING_RATE_HEAD})")
+
+    # Cosine annealing gradually reduces LR to near zero, better than step decay for long training
+    lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=NUM_EPOCHS, eta_min=1e-7)
 
     best_loss = float("inf")
     epochs_without_improvement = 0
