@@ -58,9 +58,9 @@ OUTPUT_DIR = "C:/Users/denni/Documents/MSDS_MSU/ao-damage-estimation"
 # Training hyperparameters
 BATCH_SIZE = 4
 LEARNING_RATE = 1e-4
-NUM_EPOCHS = 20
+NUM_EPOCHS = 50
 SUBSET_SIZE = 200  # Set to None to use full dataset
-CONFIDENCE_THRESHOLD = 0.15  # Lower threshold since fine-tuning is limited
+CONFIDENCE_THRESHOLD = 0.3  # Lower threshold since fine-tuning is limited
 IOU_THRESHOLD = 0.5
 EARLY_STOPPING_PATIENCE = 3  # Stop if no improvement for this many epochs
 TEST_SPLIT = 0.2
