@@ -10,10 +10,6 @@ Pipeline:
 3. Custom Dataset class for DETR
 4. Fine-tuning the pretrained model
 5. Evaluation with per-class and overall metrics
-
-Usage:
-    Update PARTS_ROOT and OUTPUT_DIR paths, then run:
-    $ python car_parts_detr.py
 """
 
 import json
@@ -45,22 +41,21 @@ warnings.filterwarnings("ignore")
 # CONFIGURATION - UPDATE THESE PATHS BEFORE RUNNING
 # =============================================================================
 # Remember: the folder named "Car_damages_dataset" actually contains PART labels
-PARTS_ROOT = "C:/Users/denni/Documents/MSDS_MSU/ao-damage-estimation/archive/Car_damages_dataset/File1"
+CURR_DIR = Path(__file__).resolve().parent
+PARENT_DIR = CURR_DIR.parent
+PARTS_ROOT = os.path.join(PARENT_DIR, "Car damages dataset/File1")
 IMG_DIR = os.path.join(PARTS_ROOT, "img")
 ANN_DIR = os.path.join(PARTS_ROOT, "ann")
-
-# Output directory for the results txt file (parent folder of the project)
-OUTPUT_DIR = "C:/Users/denni/Documents/MSDS_MSU/ao-damage-estimation"
 
 # Training hyperparameters
 BATCH_SIZE = 2  # Reduced for GPU memory with unfrozen backbone
 LEARNING_RATE_BACKBONE = 1e-5  # Lower LR for pretrained backbone
 LEARNING_RATE_HEAD = 1e-4  # Higher LR for randomly initialized head
-NUM_EPOCHS = 150
-SUBSET_SIZE = None  # None = use full dataset
+NUM_EPOCHS = 50
+SUBSET_SIZE = 500  # None = use full dataset
 CONFIDENCE_THRESHOLD = 0.5
 IOU_THRESHOLD = 0.5
-EARLY_STOPPING_PATIENCE = 15  # More patience for full training
+EARLY_STOPPING_PATIENCE = 8  # More patience for full training
 TEST_SPLIT = 0.2
 RANDOM_SEED = 42
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -766,7 +761,7 @@ def main():
             best_loss = avg_loss
             epochs_without_improvement = 0
             # Save best model checkpoint
-            save_path = os.path.join(OUTPUT_DIR, "detr_car_parts_best.pt")
+            save_path = os.path.join(PARENT_DIR, "detr_car_parts_best.pt")
             torch.save(model.state_dict(), save_path)
             print(f"  New best model saved (loss={best_loss:.4f})")
         else:
@@ -777,7 +772,7 @@ def main():
                 break
 
     # Load best model for evaluation
-    model.load_state_dict(torch.load(os.path.join(OUTPUT_DIR, "detr_car_parts_best.pt")))
+    model.load_state_dict(torch.load(os.path.join(PARENT_DIR, "detr_car_parts_best.pt")))
 
     # ---- Step 6: Evaluation ----
     print(f"\n[6/6] Evaluating on test set ({len(test_dataset)} images)...")
@@ -792,7 +787,7 @@ def main():
     )
 
     # Write results
-    results_path = os.path.join(OUTPUT_DIR, "car_parts_detection_results.txt")
+    results_path = os.path.join(PARENT_DIR, "car_parts_detection_results.txt")
     write_results(all_pred_names, all_true_names, id_to_class, results_path)
 
     print("\nDone!")
