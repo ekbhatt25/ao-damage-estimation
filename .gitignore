@@ -216,3 +216,7 @@ backend/*_results.txt
 frontend/node_modules/
 frontend/build/
 .DS_Store
+
+# Data
+Car damages dataset/
+Car parts dataset/
