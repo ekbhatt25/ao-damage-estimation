@@ -22,14 +22,17 @@ import torch
 from torch.cuda.amp import GradScaler, autocast
 
 from .config import (
-    PARTS_MODEL_PATH, DAMAGE_MODEL_PATH,
+    PARTS_MODEL_PATH, DAMAGE_MODEL_PATH, CARDD_MODEL_PATH,
     PHASE1_EPOCHS, PHASE1_LR,
     PHASE2_EPOCHS, PHASE2_LR,
+    CARDD_PHASE1_EPOCHS, CARDD_PHASE2_EPOCHS,
+    CARDD_PHASE1_LR, CARDD_PHASE2_LR,
     LR_MOMENTUM, LR_WEIGHT_DECAY, LR_STEP_SIZE, LR_GAMMA,
 )
 from .dataset import make_loaders
+from .dataset_coco import make_cardd_loaders
 from .model import (
-    build_parts_model, build_damage_model,
+    build_parts_model, build_damage_model, build_cardd_model,
     freeze_backbone, unfreeze_all, count_params,
     enable_gradient_checkpointing,
 )
@@ -115,7 +118,7 @@ def run_phase(
         )
 
 
-def train(mode: Literal["parts", "damage"]) -> Path:
+def train(mode: Literal["parts", "damage", "cardd"]) -> Path:
     """
     Full two-phase training run. Returns path to saved checkpoint.
     """
@@ -124,44 +127,55 @@ def train(mode: Literal["parts", "damage"]) -> Path:
     print(f"Training mode : {mode}")
     print(f"Device        : {device}")
 
-    train_loader, val_loader = make_loaders(mode)
-    print(f"Train batches : {len(train_loader)}  Val batches: {len(val_loader)}")
+    if mode == "cardd":
+        train_loader, val_loader = make_cardd_loaders()
+        model     = build_cardd_model()
+        save_path = CARDD_MODEL_PATH
+        ph1_epochs, ph1_lr = CARDD_PHASE1_EPOCHS, CARDD_PHASE1_LR
+        ph2_epochs, ph2_lr = CARDD_PHASE2_EPOCHS, CARDD_PHASE2_LR
+    else:
+        train_loader, val_loader = make_loaders(mode)
+        model     = build_parts_model() if mode == "parts" else build_damage_model()
+        save_path = PARTS_MODEL_PATH    if mode == "parts" else DAMAGE_MODEL_PATH
+        ph1_epochs, ph1_lr = PHASE1_EPOCHS, PHASE1_LR
+        ph2_epochs, ph2_lr = PHASE2_EPOCHS, PHASE2_LR
 
-    model = build_parts_model() if mode == "parts" else build_damage_model()
     model.to(device)
 
-    save_path = PARTS_MODEL_PATH if mode == "parts" else DAMAGE_MODEL_PATH
+    print(f"Train batches : {len(train_loader)}  Val batches: {len(val_loader)}")
+
     history: list[dict] = []
 
     # ── Phase 1: heads only ──────────────────────────────────────────────
-    print(f"\n── Phase 1: backbone frozen ({PHASE1_EPOCHS} epochs, lr={PHASE1_LR}) ──")
+    print(f"\n── Phase 1: backbone frozen ({ph1_epochs} epochs, lr={ph1_lr}) ──")
     freeze_backbone(model)
     params = count_params(model)
     print(f"   Trainable params: {params['trainable']:,} / {params['total']:,}")
 
-    optimizer = make_optimizer(model, PHASE1_LR)
+    optimizer = make_optimizer(model, ph1_lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=LR_STEP_SIZE, gamma=LR_GAMMA)
     scaler    = GradScaler()
 
     run_phase(model, train_loader, optimizer, scheduler, scaler, device,
-              PHASE1_EPOCHS, "phase1", history)
+              ph1_epochs, "phase1", history)
 
     # ── Phase 2: full fine-tune ──────────────────────────────────────────
-    print(f"\n── Phase 2: full fine-tune ({PHASE2_EPOCHS} epochs, lr={PHASE2_LR}) ──")
+    print(f"\n── Phase 2: full fine-tune ({ph2_epochs} epochs, lr={ph2_lr}) ──")
     unfreeze_all(model)
-    enable_gradient_checkpointing(model)  # recompute activations to save memory
+    if mode != "cardd":
+        enable_gradient_checkpointing(model)  # memory saving for Jetson; not needed on RTX 4070
     params = count_params(model)
     print(f"   Trainable params: {params['trainable']:,} / {params['total']:,}")
 
-    optimizer = make_optimizer(model, PHASE2_LR)
+    optimizer = make_optimizer(model, ph2_lr)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=PHASE2_EPOCHS, eta_min=1e-5
+        optimizer, T_max=ph2_epochs, eta_min=1e-5
     )
 
     best_loss = float("inf")
     best_state = None
 
-    for epoch in range(1, PHASE2_EPOCHS + 1):
+    for epoch in range(1, ph2_epochs + 1):
         t0   = time.time()
         loss = train_one_epoch(model, train_loader, optimizer, scaler, device, epoch)
         scheduler.step()
@@ -172,7 +186,7 @@ def train(mode: Literal["parts", "damage"]) -> Path:
 
         comp_str = "  ".join(f"{k}={v:.4f}" for k, v in loss.items() if k != "total")
         print(
-            f"[phase2] epoch {epoch:3d}/{PHASE2_EPOCHS}  "
+            f"[phase2] epoch {epoch:3d}/{ph2_epochs}  "
             f"loss={loss['total']:.4f}  {comp_str}  ({elapsed:.1f}s)"
         )
 
@@ -206,6 +220,6 @@ def train(mode: Literal["parts", "damage"]) -> Path:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=["parts", "damage"], required=True)
+    parser.add_argument("--mode", choices=["parts", "damage", "cardd"], required=True)
     args = parser.parse_args()
     train(args.mode)

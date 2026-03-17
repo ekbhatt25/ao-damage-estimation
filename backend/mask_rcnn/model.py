@@ -16,7 +16,7 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 from torchvision.models.resnet import Bottleneck
 
-from .config import NUM_PART_CLASSES, NUM_DAMAGE_CLASSES
+from .config import NUM_PART_CLASSES, NUM_DAMAGE_CLASSES, NUM_CARDD_CLASSES
 
 
 def enable_gradient_checkpointing(model: nn.Module) -> None:
@@ -71,6 +71,25 @@ def build_parts_model(pretrained: bool = True) -> nn.Module:
 
 def build_damage_model(pretrained: bool = True) -> nn.Module:
     return build_model(NUM_DAMAGE_CLASSES, pretrained)
+
+
+def build_cardd_model(pretrained: bool = True) -> nn.Module:
+    """
+    Mask R-CNN for CarDD: 6 damage classes + background.
+    Uses full 800/1333 resolution (not Jetson-capped) for RTX 4070.
+    """
+    weights = MaskRCNN_ResNet50_FPN_Weights.DEFAULT if pretrained else None
+    model = maskrcnn_resnet50_fpn(
+        weights=weights,
+        min_size=800,
+        max_size=1333,
+    )
+    in_features_box = model.roi_heads.box_predictor.cls_score.in_features
+    model.roi_heads.box_predictor = FastRCNNPredictor(in_features_box, NUM_CARDD_CLASSES)
+
+    in_features_mask = model.roi_heads.mask_predictor.conv5_mask.in_channels
+    model.roi_heads.mask_predictor = MaskRCNNPredictor(in_features_mask, 256, NUM_CARDD_CLASSES)
+    return model
 
 
 def freeze_backbone(model: nn.Module) -> None:

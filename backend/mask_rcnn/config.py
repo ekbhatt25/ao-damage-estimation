@@ -20,6 +20,13 @@ MODELS_DIR.mkdir(exist_ok=True)
 PARTS_MODEL_PATH  = MODELS_DIR / "parts_model.pth"
 DAMAGE_MODEL_PATH = MODELS_DIR / "damage_model.pth"
 
+CARDD_DATA_DIR   = DATA_ROOT / "CarDD_release" / "CarDD_COCO"
+CARDD_TRAIN_DIR  = CARDD_DATA_DIR / "train2017"
+CARDD_VAL_DIR    = CARDD_DATA_DIR / "val2017"
+CARDD_TRAIN_ANN  = CARDD_DATA_DIR / "annotations" / "instances_train2017.json"
+CARDD_VAL_ANN    = CARDD_DATA_DIR / "annotations" / "instances_val2017.json"
+CARDD_MODEL_PATH = MODELS_DIR / "cardd_model.pth"
+
 # ── Classes ────────────────────────────────────────────────────────────────
 # Index 0 is always background for Mask R-CNN
 PART_CLASSES = [
@@ -41,6 +48,20 @@ NUM_DAMAGE_CLASSES = len(DAMAGE_CLASSES)  # 9
 
 PART_LABEL_MAP   = {c: i for i, c in enumerate(PART_CLASSES)}
 DAMAGE_LABEL_MAP = {c: i for i, c in enumerate(DAMAGE_CLASSES)}
+
+# CarDD categories (IDs as they appear in the COCO JSON)
+# Category IDs in the JSON are 1-based; model index = category_id directly.
+CARDD_CLASSES = [
+    "__background__",   # 0
+    "dent",             # 1
+    "scratch",          # 2
+    "crack",            # 3
+    "glass shatter",    # 4
+    "lamp broken",      # 5
+    "tire flat",        # 6
+]
+NUM_CARDD_CLASSES = len(CARDD_CLASSES)  # 7
+CARDD_LABEL_MAP = {c: i for i, c in enumerate(CARDD_CLASSES)}
 
 # ── Preprocessing ──────────────────────────────────────────────────────────
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
@@ -81,3 +102,11 @@ PART_DAMAGE_OVERLAP_THRESHOLD = 0.10
 # ── Latency benchmark ──────────────────────────────────────────────────────
 LATENCY_WARMUP_RUNS = 5
 LATENCY_BENCH_RUNS  = 30
+
+# ── CarDD / RTX 4070 Laptop overrides ──────────────────────────────────────
+CARDD_BATCH_SIZE    = 2    # Phase 2 full fine-tune at 800/1333px OOMs at batch=4 on 8 GB VRAM
+CARDD_NUM_WORKERS   = 4
+CARDD_PHASE1_EPOCHS = 10
+CARDD_PHASE2_EPOCHS = 40   # more data warrants more fine-tune epochs
+CARDD_PHASE1_LR     = 0.005
+CARDD_PHASE2_LR     = 0.001

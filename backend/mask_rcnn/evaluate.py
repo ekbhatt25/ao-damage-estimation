@@ -21,14 +21,16 @@ from pycocotools.cocoeval import COCOeval
 from pycocotools import mask as coco_mask_utils
 
 from .config import (
-    PARTS_MODEL_PATH, DAMAGE_MODEL_PATH,
-    PART_CLASSES, DAMAGE_CLASSES,
+    PARTS_MODEL_PATH, DAMAGE_MODEL_PATH, CARDD_MODEL_PATH,
+    PART_CLASSES, DAMAGE_CLASSES, CARDD_CLASSES,
+    CARDD_VAL_ANN, CARDD_VAL_DIR,
     SCORE_THRESHOLD, NMS_IOU_THRESHOLD,
     LATENCY_WARMUP_RUNS, LATENCY_BENCH_RUNS,
     MODELS_DIR,
 )
 from .dataset import CarDataset
-from .model import build_parts_model, build_damage_model, load_checkpoint
+from .dataset_coco import CocoCarDataset
+from .model import build_parts_model, build_damage_model, build_cardd_model, load_checkpoint
 
 
 def get_device() -> torch.device:
@@ -263,7 +265,126 @@ def benchmark_latency(
 
 # ── Full evaluation pipeline ───────────────────────────────────────────────
 
-def evaluate(mode: Literal["parts", "damage"]) -> dict:
+def evaluate_cardd() -> dict:
+    """
+    Evaluate the CarDD model using the official val2017 split.
+    Uses the COCO JSON annotations directly as ground truth.
+    """
+    device     = get_device()
+    model_path = CARDD_MODEL_PATH
+
+    print(f"\n{'='*60}")
+    print(f"Evaluating mode : cardd")
+    print(f"Model path      : {model_path}")
+    print(f"Device          : {device}")
+
+    if not model_path.exists():
+        raise FileNotFoundError(
+            f"No trained model found at {model_path}. Run train.py --mode cardd first."
+        )
+
+    model = build_cardd_model(pretrained=False)
+    load_checkpoint(model, str(model_path), device)
+    model.to(device)
+    model.eval()
+
+    val_ds = CocoCarDataset("val", augment=False)
+    print(f"Val images      : {len(val_ds)}")
+
+    # ── Run inference, produce COCO-format results ─────────────────────
+    print("Running inference on val set...")
+    results_dt = []
+    model.eval()
+    with torch.no_grad():
+        for idx in range(len(val_ds)):
+            img_t, target = val_ds[idx]
+            img_id = int(target["image_id"].item())
+
+            with torch.cuda.amp.autocast(enabled=device.type == "cuda"):
+                preds = model([img_t.to(device)])[0]
+
+            scores = preds["scores"].cpu().numpy()
+            labels = preds["labels"].cpu().numpy()
+            masks  = preds["masks"].cpu().numpy()   # (N, 1, H, W)
+            boxes  = preds["boxes"].cpu().numpy()
+
+            for i in np.where(scores >= SCORE_THRESHOLD)[0]:
+                bin_mask = (masks[i, 0] > 0.5).astype(np.uint8)
+                rle = coco_mask_utils.encode(np.asfortranarray(bin_mask))
+                rle["counts"] = rle["counts"].decode("utf-8")
+                x1, y1, x2, y2 = boxes[i]
+                results_dt.append({
+                    "image_id":    img_id,
+                    "category_id": int(labels[i]),
+                    "segmentation": rle,
+                    "bbox":        [float(x1), float(y1), float(x2-x1), float(y2-y1)],
+                    "score":       float(scores[i]),
+                })
+
+    print(f"  Detections: {len(results_dt)}")
+
+    # ── mAP using official val annotations ────────────────────────────
+    print("Computing mAP...")
+    coco_gt = val_ds.get_coco()
+    map_results = {"mAP": 0.0, "mAP_50": 0.0, "mAP_75": 0.0,
+                   "mAP_small": 0.0, "mAP_med": 0.0, "mAP_large": 0.0}
+    if results_dt:
+        coco_dt = coco_gt.loadRes(results_dt)
+        ev = COCOeval(coco_gt, coco_dt, iouType="segm")
+        ev.evaluate(); ev.accumulate(); ev.summarize()
+        s = ev.stats
+        map_results = {
+            "mAP":       float(s[0]),
+            "mAP_50":    float(s[1]),
+            "mAP_75":    float(s[2]),
+            "mAP_small": float(s[3]),
+            "mAP_med":   float(s[4]),
+            "mAP_large": float(s[5]),
+        }
+
+    # ── Per-class ──────────────────────────────────────────────────────
+    print("Computing per-class metrics...")
+    gt_dict = {
+        "images":      val_ds.coco.loadImgs(val_ds.coco.getImgIds()),
+        "annotations": val_ds.coco.loadAnns(val_ds.coco.getAnnIds()),
+        "categories":  val_ds.coco.loadCats(val_ds.coco.getCatIds()),
+    }
+    per_class = compute_per_class_metrics(gt_dict, results_dt, CARDD_CLASSES)
+
+    # ── Latency ────────────────────────────────────────────────────────
+    print("Benchmarking latency...")
+    latency = benchmark_latency(model, val_ds, device)
+
+    results = {
+        "mode":      "cardd",
+        "map":       map_results,
+        "per_class": per_class,
+        "latency":   latency,
+    }
+
+    # ── Print summary ─────────────────────────────────────────────────
+    print(f"\n{'─'*60}")
+    print(f"mAP (0.50:0.95) : {map_results['mAP']:.4f}")
+    print(f"mAP@0.50        : {map_results['mAP_50']:.4f}")
+    print(f"mAP@0.75        : {map_results['mAP_75']:.4f}")
+    print(f"\nPer-class (IoU=0.50):")
+    print(f"  {'Class':<16} {'Prec':>6} {'Rec':>6} {'F1':>6} {'GT':>5} {'Pred':>5}")
+    print(f"  {'-'*48}")
+    for r in per_class:
+        print(f"  {r['class']:<16} {r['precision']:>6.3f} {r['recall']:>6.3f} "
+              f"{r['f1']:>6.3f} {r['n_gt']:>5} {r['n_pred']:>5}")
+    print(f"\nLatency ({latency['n_runs']} runs):")
+    print(f"  Mean: {latency['mean_ms']} ms  Std: {latency['std_ms']} ms  p95: {latency['p95_ms']} ms")
+
+    out_path = MODELS_DIR / "cardd_eval_results.json"
+    out_path.write_text(json.dumps(results, indent=2))
+    print(f"\nResults saved → {out_path}")
+    return results
+
+
+def evaluate(mode: Literal["parts", "damage", "cardd"]) -> dict:
+    if mode == "cardd":
+        return evaluate_cardd()
     device     = get_device()
     model_path = PARTS_MODEL_PATH if mode == "parts" else DAMAGE_MODEL_PATH
     class_names = PART_CLASSES if mode == "parts" else DAMAGE_CLASSES
@@ -359,6 +480,6 @@ def evaluate(mode: Literal["parts", "damage"]) -> dict:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=["parts", "damage"], required=True)
+    parser.add_argument("--mode", choices=["parts", "damage", "cardd"], required=True)
     args = parser.parse_args()
     evaluate(args.mode)

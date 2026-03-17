@@ -1,0 +1,69 @@
+{
+  "mode": "cardd",
+  "map": {
+    "mAP": 0.4567180589064812,
+    "mAP_50": 0.6173041600231701,
+    "mAP_75": 0.4751712553792242,
+    "mAP_small": 0.04561539684911233,
+    "mAP_med": 0.05354667742925765,
+    "mAP_large": 0.4699730707989158
+  },
+  "per_class": [
+    {
+      "class": "crack",
+      "precision": 0.2254,
+      "recall": 0.3955,
+      "f1": 0.2871,
+      "n_gt": 177,
+      "n_pred": 280
+    },
+    {
+      "class": "dent",
+      "precision": 0.4389,
+      "recall": 0.6028,
+      "f1": 0.508,
+      "n_gt": 501,
+      "n_pred": 869
+    },
+    {
+      "class": "glass shatter",
+      "precision": 0.9695,
+      "recall": 0.9778,
+      "f1": 0.9736,
+      "n_gt": 135,
+      "n_pred": 154
+    },
+    {
+      "class": "lamp broken",
+      "precision": 0.7624,
+      "recall": 0.9007,
+      "f1": 0.8258,
+      "n_gt": 141,
+      "n_pred": 282
+    },
+    {
+      "class": "scratch",
+      "precision": 0.4394,
+      "recall": 0.6126,
+      "f1": 0.5117,
+      "n_gt": 728,
+      "n_pred": 1345
+    },
+    {
+      "class": "tire flat",
+      "precision": 0.8682,
+      "recall": 0.9032,
+      "f1": 0.8853,
+      "n_gt": 62,
+      "n_pred": 95
+    }
+  ],
+  "latency": {
+    "mean_ms": 63.85,
+    "std_ms": 4.93,
+    "p50_ms": 62.74,
+    "p95_ms": 72.89,
+    "p99_ms": 73.43,
+    "n_runs": 30
+  }
+}
