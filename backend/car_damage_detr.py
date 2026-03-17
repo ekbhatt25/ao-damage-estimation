@@ -761,7 +761,7 @@ def main():
             best_loss = avg_loss
             epochs_without_improvement = 0
             # Save best model checkpoint
-            save_path = os.path.join(PARENT_DIR, "detr_car_parts_best.pt")
+            save_path = os.path.join(PARENT_DIR, "detr_car_damage_best.pt")
             torch.save(model.state_dict(), save_path)
             print(f"  New best model saved (loss={best_loss:.4f})")
         else:
@@ -772,7 +772,7 @@ def main():
                 break
 
     # Load best model for evaluation
-    model.load_state_dict(torch.load(os.path.join(PARENT_DIR, "detr_car_parts_best.pt")))
+    model.load_state_dict(torch.load(os.path.join(PARENT_DIR, "detr_car_damage_best.pt")))
 
     # ---- Step 6: Evaluation ----
     print(f"\n[6/6] Evaluating on test set ({len(test_dataset)} images)...")
@@ -787,7 +787,7 @@ def main():
     )
 
     # Write results
-    results_path = os.path.join(PARENT_DIR, "car_parts_detection_results.txt")
+    results_path = os.path.join(PARENT_DIR, "car_damage_detection_results.txt")
     write_results(all_pred_names, all_true_names, id_to_class, results_path)
 
     print("\nDone!")
