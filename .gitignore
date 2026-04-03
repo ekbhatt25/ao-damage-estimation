@@ -217,6 +217,14 @@ frontend/node_modules/
 frontend/build/
 .DS_Store
 
-# Data
+runs/
+backend/test_*.py
+backend/llm_eval_results.py
+
+# Model weights (too large for git, share via Drive/scp)
+models/*.pth
+models/*.pt
+
+# Data folders
 Car damages dataset/
 Car parts dataset/
