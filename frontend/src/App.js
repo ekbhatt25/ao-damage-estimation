@@ -18,7 +18,7 @@ function App() {
     formData.append('image', file);
 
     try {
-      const response = await fetch('http://localhost:8000/api/analyze', {
+      const response = await fetch('http://localhost:8000/detect', {
         method: 'POST',
         body: formData,
       });
@@ -29,12 +29,7 @@ function App() {
 
     } catch (error) {
       console.error('Error:', error);
-      setResults({
-        damageType: "Error",
-        severity: "N/A",
-        estimatedCost: "N/A",
-        recommendation: "Failed to connect to backend. Is it running?"
-      });
+      setResults({ error: "Failed to connect to backend. Is it running?" });
       setAppState('complete');
     }
   };

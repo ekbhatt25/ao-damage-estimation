@@ -1,247 +1,55 @@
 """
-Two-Model CV Detection System
-- Mask R-CNN for parts detection
-- Mask R-CNN for damage type detection
-- IoU-based merging
+CV Detection wrapper around the Mask R-CNN pipeline in backend/mask_rcnn/.
+
+Model weights are loaded from paths defined in mask_rcnn/config.py:
+  - models/parts_model.pth   (22-class car parts)
+  - models/damage_model.pth  (9-class damage types)
 """
 
-import torch
-import torchvision
-from torchvision.models.detection import maskrcnn_resnet50_fpn
-from PIL import Image
-import torchvision.transforms as T
-import numpy as np
+from mask_rcnn.inference import infer, get_device, _load_model
+
 
 class CVDetector:
-    def __init__(self, 
-                 parts_model_path='models/parts_model.pth',
-                 damage_model_path='models/damage_model.pth'):
-        """
-        Initialize two-model detection system
-        
-        Args:
-            parts_model_path: Path to Mask R-CNN parts weights
-            damage_model_path: Path to Mask R-CNN damage weights
-        """
-        
+    def __init__(self):
+        """Load both Mask R-CNN models. Paths come from mask_rcnn/config.py."""
+        self.device = get_device()
         print("Loading CV models...")
-        
-        # Device
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        print(f"Using device: {self.device}")
-        
-        # Load parts model
-        self.parts_model = self._load_model(parts_model_path, num_classes=21)  # Adjust num_classes
+        self.parts_model = _load_model("parts", self.device)
         print("✓ Mask R-CNN (parts) loaded")
-        
-        # Load damage model
-        self.damage_model = self._load_model(damage_model_path, num_classes=6)  # Adjust num_classes
+        self.damage_model = _load_model("damage", self.device)
         print("✓ Mask R-CNN (damage types) loaded")
-        
-        # Transform
-        self.transform = T.Compose([T.ToTensor()])
-        
-        # IoU threshold
-        self.iou_threshold = 0.3
-        
-        # Class names (update these based on your training)
-        self.part_names = {
-            1: 'Back-bumper',
-            2: 'Back-door',
-            3: 'Back-wheel',
-            4: 'Back-window',
-            5: 'Back-windshield',
-            6: 'Fender',
-            7: 'Front-bumper',
-            8: 'Front-door',
-            8: 'Front-wheel',
-            9: 'Front-window',
-            10: 'Grille',
-            11: 'Headlight',
-            12: 'Hood',
-            13: 'License-plate',
-            14: 'Quarter-panel',
-            15: 'Rocker-panel',
-            16: 'Roof',
-            17: 'Tail-light',
-            18: 'Trunk',
-            19: 'Windshield'          
-        }
-        
-        self.damage_names = {
-            1: 'dent',
-            2: 'scratch',
-            3: 'crack',
-            4: 'glass_shatter',
-            5: 'lamp_broken',
-            6: 'tire_flat',
-        }
-    
-    def _load_model(self, model_path, num_classes):
-        """Load Mask R-CNN model"""
-        
-        # Create model
-        model = maskrcnn_resnet50_fpn(weights=None, num_classes=num_classes)
-        
-        # Load weights
-        checkpoint = torch.load(model_path, map_location=self.device)
-        
-        # Handle different checkpoint formats
-        if 'model_state_dict' in checkpoint:
-            model.load_state_dict(checkpoint['model_state_dict'])
-        elif 'state_dict' in checkpoint:
-            model.load_state_dict(checkpoint['state_dict'])
-        else:
-            model.load_state_dict(checkpoint)
-        
-        model.to(self.device)
-        model.eval()
-        
-        return model
-    
-    def detect(self, image_path, conf_threshold=0.25):
+        self.has_parts_model = True
+
+    def detect(self, image_path: str, conf_threshold: float = 0.25) -> list[dict]:
         """
-        Run two-model detection and merge results
-        
-        Args:
-            image_path: Path to image
-            conf_threshold: Minimum confidence threshold
-        
-        Returns:
-            List of detections with part, damage_type, bbox, confidence
+        Run the two-model Mask R-CNN pipeline on an image.
+
+        Returns a flat list of detections, one entry per (part, damage_type) pair:
+            {
+                part, damage_type, confidence, bbox,
+                part_confidence, damage_confidence, iou, severity
+            }
         """
-        
-        # Load image
-        image = Image.open(image_path).convert("RGB")
-        image_tensor = self.transform(image).to(self.device)
-        
-        # STEP 1: Detect parts
-        with torch.no_grad():
-            parts_pred = self.parts_model([image_tensor])[0]
-        
-        parts = self._extract_detections(
-            parts_pred,
-            self.part_names,
-            conf_threshold
+        result = infer(
+            image_path,
+            parts_model=self.parts_model,
+            damage_model=self.damage_model,
+            device=self.device,
         )
-        
-        # STEP 2: Detect damage types
-        with torch.no_grad():
-            damage_pred = self.damage_model([image_tensor])[0]
-        
-        damages = self._extract_detections(
-            damage_pred,
-            self.damage_names,
-            conf_threshold
-        )
-        
-        # STEP 3: Merge based on IoU
-        merged = self._merge_detections(parts, damages)
-        
-        return merged
-    
-    def _extract_detections(self, prediction, class_names, conf_threshold):
-        """Extract detections from Mask R-CNN output"""
-        
+
         detections = []
-        
-        boxes = prediction['boxes'].cpu().numpy()
-        labels = prediction['labels'].cpu().numpy()
-        scores = prediction['scores'].cpu().numpy()
-        
-        for i in range(len(boxes)):
-            if scores[i] >= conf_threshold:
-                detections.append({
-                    'label': class_names.get(labels[i], f'class_{labels[i]}'),
-                    'bbox': boxes[i].tolist(),
-                    'confidence': float(scores[i])
-                })
-        
+        for part_entry in result.get("damaged_parts", []):
+            for dmg in part_entry.get("damage_types", []):
+                if dmg["confidence"] >= conf_threshold:
+                    detections.append({
+                        "part":              part_entry["part"],
+                        "damage_type":       dmg["type"],
+                        "confidence":        (part_entry["part_confidence"] + dmg["confidence"]) / 2,
+                        "bbox":              dmg["damage_bbox"],
+                        "part_confidence":   part_entry["part_confidence"],
+                        "damage_confidence": dmg["confidence"],
+                        "iou":               dmg["overlap_ratio"],
+                        "severity":          dmg["severity_proxy"],
+                    })
+
         return detections
-    
-    def _merge_detections(self, parts, damages):
-        """
-        Merge part and damage detections using IoU
-        
-        For each damage detection, find best matching part
-        """
-        
-        merged = []
-        
-        for damage in damages:
-            best_match = None
-            best_iou = 0
-            
-            # Find best matching part
-            for part in parts:
-                iou = self._calculate_iou(damage['bbox'], part['bbox'])
-                if iou > best_iou and iou > self.iou_threshold:
-                    best_iou = iou
-                    best_match = part
-            
-            # Create merged detection
-            if best_match:
-                merged.append({
-                    'part': best_match['label'],
-                    'damage_type': damage['label'],
-                    'bbox': damage['bbox'],
-                    'confidence': (damage['confidence'] + best_match['confidence']) / 2,
-                    'part_confidence': best_match['confidence'],
-                    'damage_confidence': damage['confidence'],
-                    'iou': best_iou
-                })
-            else:
-                # No matching part
-                merged.append({
-                    'part': 'unknown_part',
-                    'damage_type': damage['label'],
-                    'bbox': damage['bbox'],
-                    'confidence': damage['confidence'],
-                    'part_confidence': 0.0,
-                    'damage_confidence': damage['confidence'],
-                    'iou': 0.0
-                })
-        
-        return merged
-    
-    def _calculate_iou(self, bbox1, bbox2):
-        """Calculate Intersection over Union"""
-        
-        x1_1, y1_1, x2_1, y2_1 = bbox1
-        x1_2, y1_2, x2_2, y2_2 = bbox2
-        
-        # Intersection
-        x1_i = max(x1_1, x1_2)
-        y1_i = max(y1_1, y1_2)
-        x2_i = min(x2_1, x2_2)
-        y2_i = min(y2_1, y2_2)
-        
-        if x2_i < x1_i or y2_i < y1_i:
-            return 0.0
-        
-        intersection = (x2_i - x1_i) * (y2_i - y1_i)
-        
-        # Union
-        area1 = (x2_1 - x1_1) * (y2_1 - y1_1)
-        area2 = (x2_2 - x1_2) * (y2_2 - y1_2)
-        union = area1 + area2 - intersection
-        
-        iou = intersection / union if union > 0 else 0.0
-        
-        return iou
-
-
-if __name__ == "__main__":
-    # Test
-    detector = CVDetector()
-    
-    results = detector.detect('test_car.jpg')
-    
-    print("\nDetection Results:")
-    print("="*60)
-    for det in results:
-        print(f"Part: {det['part']}")
-        print(f"Damage: {det['damage_type']}")
-        print(f"Confidence: {det['confidence']:.2f}")
-        print(f"IoU: {det['iou']:.2f}")
-        print("-"*60)
