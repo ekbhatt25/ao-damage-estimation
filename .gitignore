@@ -215,3 +215,9 @@ backend/results_*.json
 frontend/node_modules/
 frontend/build/
 .DS_Store
+
+backend/yolo_v8/data/
+backend/yolo_v8/outputs/
+runs/
+backend/test_*.py
+backend/llm_eval_results.py
