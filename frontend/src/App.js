@@ -25,7 +25,8 @@ function App() {
     formData.append('zipCode', selectedZipCode);
 
     try {
-      const response = await fetch('http://localhost:8000/detect', {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_URL}/detect`, {
         method: 'POST',
         body: formData,
       });
