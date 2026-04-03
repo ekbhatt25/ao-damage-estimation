@@ -212,6 +212,7 @@ backend/.env
 backend/__pycache__/
 backend/*.pyc
 backend/results_*.json
+backend/*_results.txt
 frontend/node_modules/
 frontend/build/
 .DS_Store
@@ -222,30 +223,8 @@ backend/llm_eval_results.py
 
 # Model weights (too large for git, share via Drive/scp)
 models/*.pth
-pycache/
-*.py[cod]
-*$py.class
-.venv/
-venv/
-env/
-bin/
-lib/
-include/
-.env
-.env.local
-**/.pth
-**/.pt
-**/.h5
-**/.weights
-**/*.onnx
-archive/
-runs/
-backend/temp/
-results/
-logs/
-build_log.txt
-node_modules/
-dist/
-build/
-.DS_Store
-Thumbs.db
+models/*.pt
+
+# Data folders
+Car damages dataset/
+Car parts dataset/
