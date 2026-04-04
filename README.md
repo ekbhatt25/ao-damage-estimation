@@ -1,5 +1,5 @@
 ---
-title: AO Damage Estimation
+title: Auto-Owners Vehicle Damage Estimator
 emoji: 🚗
 colorFrom: blue
 colorTo: green
@@ -20,7 +20,7 @@ This project automates vehicle damage assessment for Auto-Owners Insurance using
 | **Mask R-CNN** (ResNet-50-FPN) | Instance segmentation for car part detection (22 classes) |
 | **Mask R-CNN** (ResNet-50-FPN) | Instance segmentation for damage type classification (8 classes) |
 | **YOLOv8** *(planned)* | Real-time object detection for supplementary damage detection |
-| **Gemini 2.5 Flash** *(planned)* | Multimodal LLM for natural language damage explanation and cost reasoning |
+| **Gemini** *(planned)* | Multimodal LLM for natural language damage explanation and cost reasoning |
 
 Both Mask R-CNN models were fine-tuned from a COCO-pretrained ResNet-50-FPN backbone using a two-phase transfer learning strategy: Phase 1 freezes the backbone and trains only the RPN and ROI heads; Phase 2 unfreezes all layers for full fine-tuning. Training used SGD with momentum, StepLR scheduling, mixed precision (AMP autocast + GradScaler), and gradient checkpointing to fit within 8 GB unified memory on a Jetson Orin Nano (CUDA 12.6, JetPack 6.1).
 
@@ -166,7 +166,7 @@ Returns model status.
 **Training:** Transfer learning, fine-tuning, SGD, StepLR, AMP (automatic mixed precision), gradient checkpointing, COCO-format annotations, pycocotools, mAP evaluation  
 **Data Processing:** OpenCV, NumPy, Pillow, Laplacian blur detection  
 **Object Detection (planned):** YOLOv8, Ultralytics  
-**LLM / Generative AI (planned):** Gemini 2.5 Flash, Google Generative AI SDK, multimodal inference, structured JSON output  
+**LLM / Generative AI (planned):** Gemini, Google Generative AI SDK, multimodal inference, structured JSON output  
 **Deployment:** Docker, Hugging Face Spaces, Hugging Face Hub, NVIDIA Jetson Orin Nano, CUDA 12.6, JetPack 6.1  
 
 ## License
