@@ -160,14 +160,11 @@ Returns model status.
 
 ## Technologies Used
 
-**Frontend:** React, Tailwind CSS, Framer Motion, Vercel  
+**Frontend:** React, Tailwind CSS, Framer Motion  
 **Backend:** FastAPI, Uvicorn, Python 3.10  
-**Computer Vision:** PyTorch, torchvision, Mask R-CNN, ResNet-50, Feature Pyramid Network (FPN), ROI Align, RPN, instance segmentation, bounding box regression, non-maximum suppression (NMS)  
-**Training:** Transfer learning, fine-tuning, SGD, StepLR, AMP (automatic mixed precision), gradient checkpointing, COCO-format annotations, pycocotools, mAP evaluation  
-**Data Processing:** OpenCV, NumPy, Pillow, Laplacian blur detection  
-**Object Detection (planned):** YOLOv8, Ultralytics  
-**LLM / Generative AI (planned):** Gemini, Google Generative AI SDK, multimodal inference, structured JSON output  
-**Deployment:** Docker, Hugging Face Spaces, Hugging Face Hub, NVIDIA Jetson Orin Nano, CUDA 12.6, JetPack 6.1  
+**Computer Vision:** PyTorch, torchvision, Mask R-CNN (ResNet-50-FPN), YOLOv8, Ultralytics, pycocotools, OpenCV, NumPy, Pillow  
+**LLM (planned):** Gemini, Google Generative AI SDK  
+**Deployment:** Docker, Hugging Face Spaces, Hugging Face Hub, Vercel, NVIDIA Jetson Orin Nano, CUDA 12.6  
 
 ## License
 
