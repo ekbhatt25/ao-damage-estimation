@@ -75,7 +75,7 @@ function App() {
                 className="w-full"
               >
                 <div className="text-center mb-12">
-                  <h2 className="text-4xl md:text-5xl font-bold mb-6 text-black">
+                  <h2 className="text-3xl font-bold mb-6 text-black whitespace-nowrap">
                     Vehicle Damage Estimator
                   </h2>
                   <p className="text-xl text-black max-w-2xl mx-auto">
