@@ -5,6 +5,7 @@ import LoadingOverlay from './components/LoadingOverlay';
 import ResultsDisplay from './components/ResultsDisplay';
 import './App.css';
 import aoLogo from './ao-logo.jpg';
+import aoTextLogo from './ao-text-logo.jpg';
 
 function App() {
   const [appState, setAppState] = useState('idle');
@@ -55,12 +56,12 @@ function App() {
       <div className="container mx-auto px-4 py-8 relative min-h-screen flex flex-col">
 
         {/* Header */}
-        <header className="flex items-center justify-center py-6 mb-12 border-b border-gray-800/50">
-          <div className="flex items-center gap-4">
+        <header className="flex items-center justify-center py-6 mb-16 border-b border-gray-800/50">
+          <div className="flex items-center gap-6">
             <img src={aoLogo} alt="Auto-Owners logo" className="w-20 h-20 rounded-xl object-cover" />
-            <div className="flex flex-col">
-              <span className="text-4xl font-semibold tracking-wide text-black whitespace-nowrap">Auto-Owners Insurance</span>
-              <span className="text-sm font-medium tracking-widest text-[#1a4a7a] uppercase mt-1" style={{fontFamily: "'Oswald', sans-serif"}}>Vehicle Damage Estimator</span>
+            <div className="flex flex-col items-start">
+              <img src={aoTextLogo} alt="Auto-Owners Insurance" className="h-16 object-contain" />
+              <span className="text-sm font-medium tracking-widest text-[#1a4a7a] uppercase mt-2" style={{fontFamily: "'Oswald', sans-serif"}}>Vehicle Damage Estimator</span>
             </div>
           </div>
         </header>
