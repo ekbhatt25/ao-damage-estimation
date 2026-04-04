@@ -60,7 +60,7 @@ function App() {
             <img src={aoLogo} alt="Auto-Owners logo" className="w-14 h-14 rounded-xl object-cover" />
             <div className="flex flex-col">
               <span className="text-2xl font-semibold tracking-wide text-black">Auto-Owners Insurance</span>
-              <span className="text-base font-medium tracking-widest text-[#1a4a7a] uppercase">Damage Estimator</span>
+              <span className="text-base font-medium tracking-widest text-[#1a4a7a] uppercase">Vehicle Damage Estimator</span>
             </div>
           </div>
         </header>
@@ -115,7 +115,7 @@ function App() {
         </main>
 
         <footer className="mt-12 py-6 text-center text-sm text-gray-400 border-t border-gray-800/50">
-          <p>&copy; 2026 Auto-Owners Damage Estimator. Repair cost & severity estimations are pending.</p>
+          <p>&copy; 2026 Auto-Owners Vehicle Damage Estimator. Repair cost & severity estimations are pending.</p>
         </footer>
       </div>
     </div>
