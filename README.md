@@ -7,7 +7,7 @@ sdk: docker
 pinned: false
 ---
 
-# AO Vehicle Damage Estimator
+# Auto-Owners Vehicle Damage Estimator
 
 ## Description
 
@@ -24,7 +24,7 @@ This project automates vehicle damage assessment for Auto-Owners Insurance using
 
 Both Mask R-CNN models were fine-tuned from a COCO-pretrained ResNet-50-FPN backbone using a two-phase transfer learning strategy: Phase 1 freezes the backbone and trains only the RPN and ROI heads; Phase 2 unfreezes all layers for full fine-tuning. Training used SGD with momentum, StepLR scheduling, mixed precision (AMP autocast + GradScaler), and gradient checkpointing to fit within 8 GB unified memory on a Jetson Orin Nano (CUDA 12.6, JetPack 6.1).
 
-## CV Pipeline
+## Computer Vision Pipeline
 
 ```
 Image Upload
@@ -96,7 +96,7 @@ Both auto-redeploy on every push to `main`.
 ao-damage-estimation/
 ├── backend/
 │   ├── api.py              # FastAPI REST API — POST /detect endpoint
-│   ├── cv_detector.py      # Wrapper around Mask R-CNN inference pipeline
+│   ├── cv_detector.py      # Computer vision wrapper around Mask R-CNN inference pipeline
 │   └── mask_rcnn/
 │       ├── config.py       # Hyperparameters, class labels, paths
 │       ├── model.py        # Mask R-CNN model factory (FastRCNNPredictor, MaskRCNNPredictor)
