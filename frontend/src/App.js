@@ -53,7 +53,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#084477] via-[#0a5694] to-[#084477] text-white selection:bg-[#084477]/30">
-      <div className="container mx-auto px-4 py-8 relative min-h-screen flex flex-col">
+      <div className="container mx-auto px-4 py-0 relative min-h-screen flex flex-col">
 
         {/* Header */}
         <header className="flex items-center justify-center py-2 mb-16 border-b border-gray-800/50 w-full">
