@@ -11,18 +11,40 @@ pinned: false
 
 ## Description
 
-This project automates vehicle damage assessment for Auto-Owners Insurance using a multi-model AI pipeline. A user uploads a photo of a damaged vehicle and the system identifies which parts are damaged, what type of damage is present, and generates a structured output for downstream cost estimation. The pipeline is designed to be transparent — returning part-level detections with confidence scores and severity ratings rather than a single opaque result.
+This project automates vehicle damage assessment for Auto-Owners Insurance using a multi-model computer vision and generative AI pipeline. A user uploads a photo of a damaged vehicle and the system performs instance segmentation to identify which parts are damaged, classifies the damage type, and generates a structured output for downstream cost estimation. The pipeline is designed to be transparent — returning part-level detections with confidence scores, bounding boxes, segmentation masks, and severity ratings rather than a single opaque result.
 
 ## Models
 
 | Model | Purpose |
 |---|---|
-| **Mask R-CNN** (ResNet-50-FPN) | Detects damaged car parts (22 classes: bumper, hood, door, etc.) |
-| **Mask R-CNN** (ResNet-50-FPN) | Detects damage types (8 classes: dent, scratch, broken part, etc.) |
-| **Gemini** *(planned)* | Generates natural language explanation of damage and repair recommendations |
-| **YOLOv8** *(planned)* | Alternative/supplementary damage type detection |
+| **Mask R-CNN** (ResNet-50-FPN) | Instance segmentation for car part detection (22 classes) |
+| **Mask R-CNN** (ResNet-50-FPN) | Instance segmentation for damage type classification (8 classes) |
+| **YOLOv8** *(planned)* | Real-time object detection for supplementary damage detection |
+| **Gemini 2.5 Flash** *(planned)* | Multimodal LLM for natural language damage explanation and cost reasoning |
 
-Both Mask R-CNN models were trained from scratch on the Car Parts and Car Damages datasets using a two-phase training strategy (frozen backbone → full fine-tune) on a Jetson Orin Nano.
+Both Mask R-CNN models were fine-tuned from a COCO-pretrained ResNet-50-FPN backbone using a two-phase transfer learning strategy: Phase 1 freezes the backbone and trains only the RPN and ROI heads; Phase 2 unfreezes all layers for full fine-tuning. Training used SGD with momentum, StepLR scheduling, mixed precision (AMP autocast + GradScaler), and gradient checkpointing to fit within 8 GB unified memory on a Jetson Orin Nano (CUDA 12.6, JetPack 6.1).
+
+## CV Pipeline
+
+```
+Image Upload
+    │
+    ▼
+Preprocessing (orientation correction, quality gate: blur detection, brightness check)
+    │
+    ├──▶ Parts Mask R-CNN ──▶ Part detections (class, bbox, mask, score)
+    │
+    ├──▶ Damage Mask R-CNN ──▶ Damage detections (class, bbox, mask, score)
+    │
+    ▼
+IoU / Mask Overlap Cross-Reference
+    │
+    ▼
+Structured JSON Output (part, damage type, severity, confidence, bbox)
+    │
+    ▼
+LLM Layer — Gemini (planned): cost reasoning + natural language explanation
+```
 
 ## Installation & Getting Started
 
@@ -73,20 +95,34 @@ Both auto-redeploy on every push to `main`.
 ```
 ao-damage-estimation/
 ├── backend/
-│   ├── api.py              # FastAPI app — POST /detect endpoint
+│   ├── api.py              # FastAPI REST API — POST /detect endpoint
 │   ├── cv_detector.py      # Wrapper around Mask R-CNN inference pipeline
-│   └── mask_rcnn/          # Mask R-CNN model, training, inference, config
+│   └── mask_rcnn/
+│       ├── config.py       # Hyperparameters, class labels, paths
+│       ├── model.py        # Mask R-CNN model factory (FastRCNNPredictor, MaskRCNNPredictor)
+│       ├── dataset.py      # Custom PyTorch Dataset with COCO-format annotations
+│       ├── train.py        # Two-phase training loop with AMP and gradient checkpointing
+│       ├── inference.py    # Full inference pipeline with mask overlap cross-referencing
+│       ├── evaluate.py     # COCO mAP evaluation (pycocotools)
+│       └── preprocess.py   # Image quality gating and orientation correction
 ├── frontend/
-│   └── src/                # React app
-├── models/                 # Model weights (not in git — see below)
-└── Dockerfile              # HF Spaces deployment
+│   └── src/                # React SPA
+├── models/                 # Model weights (not in git — hosted on HF Hub)
+└── Dockerfile              # Containerized deployment for HF Spaces
 ```
 
 ## Model Weights
 
-Weights are not stored in git (~170 MB each). They are hosted on Hugging Face Hub at `eerabhatt/ao-damage-models` and downloaded automatically at deployment build time.
+Weights are not stored in git (~170 MB each). They are hosted on Hugging Face Hub at `eerabhatt/ao-damage-models` and pulled automatically at Docker build time via `huggingface_hub`.
 
 To run locally, download `parts_model.pth` and `damage_model.pth` from the HF Hub and place them in `/models`.
+
+## Model Performance
+
+| Model | mAP (COCO) | mAP@50 | Notes |
+|---|---|---|---|
+| Parts Mask R-CNN | 0.507 | 0.785 | Strong on large parts (door, windshield, wheel) |
+| Damage Mask R-CNN | 0.040 | 0.082 | Limited by dataset size and class imbalance |
 
 ## API
 
@@ -105,7 +141,8 @@ Upload a vehicle photo and receive structured damage detections.
       "damage_type": "Dent",
       "confidence": 0.73,
       "severity": "moderate",
-      "bbox": [120, 340, 450, 520]
+      "bbox": [120, 340, 450, 520],
+      "iou": 0.42
     }
   ],
   "summary": {
@@ -123,10 +160,15 @@ Returns model status.
 
 ## Technologies Used
 
-**Frontend:** React, Tailwind CSS, Framer Motion  
-**Backend:** FastAPI, PyTorch, torchvision  
-**Models:** Mask R-CNN (ResNet-50-FPN), YOLOv8 *(planned)*, Gemini *(planned)*  
-**Deployment:** Hugging Face Spaces (Docker), Vercel
+**Frontend:** React, Tailwind CSS, Framer Motion, Vercel  
+**Backend:** FastAPI, Uvicorn, Python 3.10  
+**Computer Vision:** PyTorch, torchvision, Mask R-CNN, ResNet-50, Feature Pyramid Network (FPN), ROI Align, RPN, instance segmentation, bounding box regression, non-maximum suppression (NMS)  
+**Training:** Transfer learning, fine-tuning, SGD, StepLR, AMP (automatic mixed precision), gradient checkpointing, COCO-format annotations, pycocotools, mAP evaluation  
+**Data Processing:** OpenCV, NumPy, Pillow, Laplacian blur detection  
+**Object Detection (planned):** YOLOv8, Ultralytics  
+**LLM / Generative AI (planned):** Gemini 2.5 Flash, Google Generative AI SDK, multimodal inference, structured JSON output  
+**MLOps / Deployment:** Docker, Hugging Face Spaces, Hugging Face Hub, git-lfs, NVIDIA Jetson Orin Nano, CUDA 12.6, JetPack 6.1  
+**Evaluation (explored):** DETR, EfficientDet, Claude Sonnet, GPT-4o, Gemini — benchmarked via COCO evaluation protocol  
 
 ## License
 
