@@ -59,8 +59,9 @@ function App() {
           <div className="flex items-center gap-4">
             <img src={aoLogo} alt="Auto-Owners logo" className="w-20 h-20 rounded-xl object-cover" />
             <div className="flex flex-col">
-              <span className="text-4xl font-semibold tracking-wide text-black" style={{fontFamily: "'Playfair Display', serif"}}>Auto-Owners Insurance</span>
-              <span className="text-xl font-medium tracking-widest text-[#1a4a7a] uppercase">Vehicle Damage Estimator</span>
+              <span className="text-5xl text-[#1a3a6b]" style={{fontFamily: "'Great Vibes', cursive"}}>Auto-Owners</span>
+              <span className="text-lg tracking-widest text-[#1a3a6b] uppercase" style={{fontFamily: "'Oswald', sans-serif"}}>Insurance</span>
+              <span className="text-sm font-medium tracking-widest text-[#1a4a7a] uppercase mt-1" style={{fontFamily: "'Oswald', sans-serif"}}>Vehicle Damage Estimator</span>
             </div>
           </div>
         </header>
