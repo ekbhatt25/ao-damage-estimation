@@ -161,7 +161,7 @@ Returns model status.
 ## Technologies Used
 
 **Frontend:** React, Tailwind CSS, Framer Motion  
-**Backend:** FastAPI, Uvicorn
+**Backend:** FastAPI, Uvicorn  
 **Computer Vision:** PyTorch, Mask R-CNN (ResNet-50-FPN), YOLOv8, OpenCV, NumPy, Pillow, torchvision, pycocotools  
 **LLM (planned):** Gemini, Google Generative AI SDK  
 **Deployment:** Docker, Hugging Face Spaces, Vercel
