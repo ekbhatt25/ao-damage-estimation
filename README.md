@@ -162,6 +162,7 @@ Returns model status.
 
 **Frontend:** React, Tailwind CSS, Framer Motion  
 **Backend:** FastAPI, Uvicorn
+
 **Computer Vision:** PyTorch, torchvision, Mask R-CNN (ResNet-50-FPN), YOLOv8, OpenCV, NumPy, Pillow, pycocotools  
 **LLM (planned):** Gemini, Google Generative AI SDK  
 **Deployment:** Docker, Hugging Face Spaces, Vercel
