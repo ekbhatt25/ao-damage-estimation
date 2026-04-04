@@ -59,8 +59,8 @@ function App() {
           <div className="flex items-center gap-4">
             <img src={aoLogo} alt="Auto-Owners logo" className="w-14 h-14 rounded-xl object-cover" />
             <div className="flex flex-col">
-              <span className="text-2xl font-semibold tracking-wide text-black" style={{fontFamily: "'Georgia', serif"}}>Auto-Owners Insurance</span>
-              <span className="text-base font-medium tracking-widest text-[#7ab3e0] uppercase" style={{fontFamily: "'Georgia', serif"}}>Damage Estimator</span>
+              <span className="text-2xl font-semibold tracking-wide text-black">Auto-Owners Insurance</span>
+              <span className="text-base font-medium tracking-widest text-[#1a4a7a] uppercase">Damage Estimator</span>
             </div>
           </div>
         </header>
@@ -77,16 +77,16 @@ function App() {
                 className="w-full"
               >
                 <div className="text-center mb-12">
-                  <h2 className="text-4xl md:text-5xl font-bold mb-6 text-black" style={{fontFamily: "'Georgia', serif"}}>
+                  <h2 className="text-4xl md:text-5xl font-bold mb-6 text-black">
                     Damaged Car Analysis
                   </h2>
-                  <p className="text-xl text-black max-w-2xl mx-auto" style={{fontFamily: "'Georgia', serif"}}>
+                  <p className="text-xl text-black max-w-2xl mx-auto">
                     Upload a photo of the damaged vehicle for an instant AI-powered repair cost estimation.
                   </p>
                 </div>
 
                 <div className="mb-8 max-w-md mx-auto bg-white/10 p-5 rounded-xl border border-white/20">
-                  <label className="block font-semibold mb-2" htmlFor="zipSelect" style={{fontFamily: "'Georgia', serif"}}>Select ZIP Code</label>
+                  <label className="block font-semibold mb-2" htmlFor="zipSelect">Select ZIP Code</label>
                   <select
                     id="zipSelect"
                     value={selectedZipCode}
