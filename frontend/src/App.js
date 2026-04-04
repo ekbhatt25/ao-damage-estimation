@@ -4,6 +4,7 @@ import ImageUpload from './components/ImageUpload';
 import LoadingOverlay from './components/LoadingOverlay';
 import ResultsDisplay from './components/ResultsDisplay';
 import './App.css';
+import aoLogo from './ao-logo.jpg';
 
 function App() {
   const [appState, setAppState] = useState('idle');
@@ -56,9 +57,7 @@ function App() {
         {/* Header */}
         <header className="flex items-center justify-center py-6 mb-12 border-b border-gray-800/50">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#084477] rounded-lg flex items-center justify-center">
-              <span className="font-bold text-white">AO</span>
-            </div>
+            <img src={aoLogo} alt="Auto-Owners logo" className="w-8 h-8 rounded-lg object-cover" />
             <h1 className="text-xl font-bold tracking-tight">Auto-Owners<span className="text-[#0a5694]"> Damage Estimator</span></h1>
           </div>
         </header>
