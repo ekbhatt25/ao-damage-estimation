@@ -27,7 +27,7 @@ const ImageUpload = ({ onUpload }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-xl mx-auto"
+      className="w-full max-w-2xl mx-auto"
     >
       <div
         className="relative border-2 border-dashed border-gray-600 rounded-2xl p-12 text-center hover:border-blue-500 transition-colors cursor-pointer bg-gray-800/50 backdrop-blur-sm"
