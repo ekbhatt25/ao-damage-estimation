@@ -167,8 +167,7 @@ Returns model status.
 **Data Processing:** OpenCV, NumPy, Pillow, Laplacian blur detection  
 **Object Detection (planned):** YOLOv8, Ultralytics  
 **LLM / Generative AI (planned):** Gemini 2.5 Flash, Google Generative AI SDK, multimodal inference, structured JSON output  
-**MLOps / Deployment:** Docker, Hugging Face Spaces, Hugging Face Hub, git-lfs, NVIDIA Jetson Orin Nano, CUDA 12.6, JetPack 6.1  
-**Evaluation (explored):** DETR, EfficientDet, Claude Sonnet, GPT-4o, Gemini — benchmarked via COCO evaluation protocol  
+**Deployment:** Docker, Hugging Face Spaces, Hugging Face Hub, NVIDIA Jetson Orin Nano, CUDA 12.6, JetPack 6.1  
 
 ## License
 
