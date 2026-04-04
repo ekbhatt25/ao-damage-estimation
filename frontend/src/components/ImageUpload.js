@@ -1,7 +1,7 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Upload } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const ImageUpload = ({ onUpload }) => {
   const handleFileChange = (event) => {

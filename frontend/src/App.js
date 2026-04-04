@@ -7,7 +7,7 @@ import './App.css';
 
 function App() {
   const [appState, setAppState] = useState('idle');
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState(null); // eslint-disable-line no-unused-vars
   const [results, setResults] = useState(null);
   const [selectedZipCode, setSelectedZipCode] = useState('');
 
