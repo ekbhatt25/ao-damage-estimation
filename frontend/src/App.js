@@ -56,7 +56,7 @@ function App() {
       <div className="container mx-auto px-4 py-8 relative min-h-screen flex flex-col">
 
         {/* Header */}
-        <header className="flex items-center justify-center py-8 mb-16 border-b border-gray-800/50 w-full">
+        <header className="flex items-center justify-center py-2 mb-16 border-b border-gray-800/50 w-full">
           <div className="flex items-center justify-center gap-8 w-full px-8">
             <img src={aoLogo} alt="Auto-Owners logo" className="w-24 h-24 rounded-xl object-cover flex-shrink-0" />
             <img src={aoTextLogo} alt="Auto-Owners Insurance" className="h-36 object-contain flex-grow" />
