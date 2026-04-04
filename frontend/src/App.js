@@ -57,10 +57,10 @@ function App() {
         {/* Header */}
         <header className="flex items-center justify-center py-6 mb-12 border-b border-gray-800/50">
           <div className="flex items-center gap-4">
-            <img src={aoLogo} alt="Auto-Owners logo" className="w-14 h-14 rounded-xl object-cover" />
+            <img src={aoLogo} alt="Auto-Owners logo" className="w-20 h-20 rounded-xl object-cover" />
             <div className="flex flex-col">
-              <span className="text-2xl font-semibold tracking-wide text-black">Auto-Owners Insurance</span>
-              <span className="text-base font-medium tracking-widest text-[#1a4a7a] uppercase">Vehicle Damage Estimator</span>
+              <span className="text-4xl font-semibold tracking-wide text-black">Auto-Owners Insurance</span>
+              <span className="text-xl font-medium tracking-widest text-[#1a4a7a] uppercase">Vehicle Damage Estimator</span>
             </div>
           </div>
         </header>
