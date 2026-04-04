@@ -57,9 +57,9 @@ function App() {
 
         {/* Header */}
         <header className="flex items-center justify-center py-2 mb-16 border-b border-gray-800/50 w-full">
-          <div className="flex items-center justify-center gap-8 w-full px-8">
-            <img src={aoLogo} alt="Auto-Owners logo" className="h-36 w-auto rounded-xl object-cover flex-shrink-0" />
-            <img src={aoTextLogo} alt="Auto-Owners Insurance" className="h-36 object-contain flex-grow" />
+          <div className="flex items-center justify-center gap-4 w-full px-8">
+            <img src={aoLogo} alt="Auto-Owners logo" className="h-20 w-auto rounded-xl object-cover flex-shrink-0" />
+            <img src={aoTextLogo} alt="Auto-Owners Insurance" className="h-20 object-contain" />
           </div>
         </header>
 
