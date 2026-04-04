@@ -114,7 +114,7 @@ function App() {
           </AnimatePresence>
         </main>
 
-        <footer className="mt-12 py-6 text-center text-sm text-gray-400 border-t border-gray-800/50">
+        <footer className="mt-12 py-6 text-center text-sm text-black border-t border-gray-800/50">
           <p>&copy; 2026 Auto-Owners Vehicle Damage Estimator. Repair cost & severity estimations are pending.</p>
         </footer>
       </div>

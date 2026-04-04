@@ -48,7 +48,7 @@ const ImageUpload = ({ onUpload }) => {
             <h3 className="text-xl font-semibold text-white mb-2">Upload Car Image</h3>
             <p className="text-black">Drag and drop or click to browse</p>
           </div>
-          <div className="flex gap-2 text-sm text-gray-500">
+          <div className="flex gap-2 text-sm text-black">
             <span>JPG</span>
             <span>PNG</span>
             <span>WEBP</span>
