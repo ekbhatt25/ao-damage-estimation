@@ -58,7 +58,7 @@ function App() {
         {/* Header */}
         <header className="flex items-center justify-center py-2 mb-16 border-b border-gray-800/50 w-full">
           <div className="flex items-center justify-center gap-4 w-full px-8">
-            <img src={aoLogo} alt="Auto-Owners logo" className="h-28 w-28 object-contain flex-shrink-0" />
+            <img src={aoLogo} alt="Auto-Owners logo" className="h-28 w-28 object-contain flex-shrink-0 border-4 border-[#1a3a6b]" />
             <img src={aoTextLogo} alt="Auto-Owners Insurance" className="h-28 object-contain" />
           </div>
         </header>
