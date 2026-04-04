@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  font-family: 'Georgia', serif !important;
+}
+
 :root {
   --primary: #3b82f6;
   --bg-dark: #0f172a;
