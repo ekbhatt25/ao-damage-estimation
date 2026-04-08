@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir \
     fastapi "uvicorn[standard]" python-multipart \
     pillow numpy opencv-python-headless pycocotools \
-    huggingface_hub ultralytics
+    huggingface_hub ultralytics scikit-learn joblib
 
 # PyTorch CPU — HF Spaces free tier has no GPU
 RUN pip install --no-cache-dir \
