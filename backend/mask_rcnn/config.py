@@ -33,12 +33,11 @@ PART_CLASSES = [
 
 DAMAGE_CLASSES = [
     "__background__",
-    "Broken part", "Corrosion", "Cracked", "Dent",
-    "Flaking", "Missing part", "Paint chip", "Scratch",
+    "Dent", "Scratch", "Crack", "Glass shatter", "Lamp broken", "Tire flat",
 ]
 
 NUM_PART_CLASSES   = len(PART_CLASSES)    # 22
-NUM_DAMAGE_CLASSES = len(DAMAGE_CLASSES)  # 9
+NUM_DAMAGE_CLASSES = len(DAMAGE_CLASSES)  # 7
 
 PART_LABEL_MAP   = {c: i for i, c in enumerate(PART_CLASSES)}
 DAMAGE_LABEL_MAP = {c: i for i, c in enumerate(DAMAGE_CLASSES)}

@@ -18,11 +18,10 @@ This project automates vehicle damage assessment for Auto-Owners Insurance using
 | Model | Purpose |
 |---|---|
 | **Mask R-CNN** (ResNet-50-FPN) | Instance segmentation for car part detection (22 classes) |
-| **Mask R-CNN** (ResNet-50-FPN) | Instance segmentation for damage type classification (8 classes) |
-| **YOLOv8** *(planned)* | Real-time object detection for supplementary damage detection |
+| **YOLOv8m** | Object detection for damage type classification (6 classes) |
 | **Gemini** *(planned)* | Multimodal LLM for natural language damage explanation and cost reasoning |
 
-Both Mask R-CNN models were fine-tuned from a COCO-pretrained ResNet-50-FPN backbone using a two-phase transfer learning strategy: Phase 1 freezes the backbone and trains only the RPN and ROI heads; Phase 2 unfreezes all layers for full fine-tuning. Training used SGD with momentum, StepLR scheduling, mixed precision (AMP autocast + GradScaler), and gradient checkpointing to fit within 8 GB unified memory on a Jetson Orin Nano (CUDA 12.6, JetPack 6.1).
+The Mask R-CNN model was fine-tuned from a COCO-pretrained ResNet-50-FPN backbone using a two-phase transfer learning strategy: Phase 1 freezes the backbone and trains only the RPN and ROI heads; Phase 2 unfreezes all layers for full fine-tuning. Training used SGD with momentum, StepLR scheduling, mixed precision (AMP autocast + GradScaler), and gradient checkpointing to fit within 8 GB unified memory on a Jetson Orin Nano (CUDA 12.6, JetPack 6.1). The YOLOv8m damage model was fine-tuned separately on a labeled vehicle damage dataset.
 
 ## Computer Vision Pipeline
 
@@ -34,7 +33,7 @@ Preprocessing (orientation correction, quality gate: blur detection, brightness 
     │
     ├──▶ Parts Mask R-CNN ──▶ Part detections (class, bbox, mask, score)
     │
-    ├──▶ Damage Mask R-CNN ──▶ Damage detections (class, bbox, mask, score)
+    ├──▶ Damage YOLOv8m ──▶ Damage detections (class, bbox, score)
     │
     ▼
 IoU / Mask Overlap Cross-Reference
@@ -52,7 +51,7 @@ LLM Layer — Gemini (planned): cost reasoning + natural language explanation
 
 - Python 3.10+
 - Node.js 18+
-- Model weights: `parts_model.pth` and `damage_model.pth` (place in `/models` at project root)
+- Model weights: `parts_model.pth` and `best_car_damage_yolo.pt` (place in `/models` at project root)
 
 ### Backend Setup
 
@@ -61,7 +60,7 @@ cd backend
 python -m venv venv
 source venv/bin/activate
 pip install fastapi "uvicorn[standard]" python-multipart pillow numpy \
-    opencv-python-headless pycocotools torch torchvision \
+    opencv-python-headless pycocotools ultralytics torch torchvision \
     --index-url https://download.pytorch.org/whl/cpu
 uvicorn api:app --reload --port 8000
 ```
@@ -113,16 +112,16 @@ ao-damage-estimation/
 
 ## Model Weights
 
-Weights are not stored in git (~170 MB each). They are hosted on Hugging Face Hub at `eerabhatt/ao-damage-models` and pulled automatically at Docker build time via `huggingface_hub`.
+Weights are not stored in git. They are hosted on Hugging Face Hub at `eerabhatt/ao-damage-models` and pulled automatically at Docker build time via `huggingface_hub`.
 
-To run locally, download `parts_model.pth` and `damage_model.pth` from the HF Hub and place them in `/models`.
+To run locally, download `parts_model.pth` and `best_car_damage_yolo.pt` from the HF Hub and place them in `/models`.
 
 ## Model Performance
 
 | Model | mAP (COCO) | mAP@50 | Notes |
 |---|---|---|---|
 | Parts Mask R-CNN | 0.507 | 0.785 | Strong on large parts (door, windshield, wheel) |
-| Damage Mask R-CNN | 0.040 | 0.082 | Limited by dataset size and class imbalance |
+| Damage YOLOv8m | — | 0.751 | 6-class damage detection (dent, scratch, crack, glass shatter, lamp broken, tire flat) |
 
 ## API
 
@@ -162,7 +161,7 @@ Returns model status.
 
 **Frontend:** React, Tailwind CSS, Framer Motion  
 **Backend:** FastAPI, Uvicorn  
-**Computer Vision:** PyTorch, Mask R-CNN (ResNet-50-FPN), YOLOv8, OpenCV, NumPy, Pillow, torchvision, pycocotools  
+**Computer Vision:** PyTorch, Mask R-CNN (ResNet-50-FPN), YOLOv8m (Ultralytics), OpenCV, NumPy, Pillow, torchvision, pycocotools  
 **LLM (planned):** Gemini, Google Generative AI SDK  
 **Deployment:** Docker, Hugging Face Spaces, Vercel
 
