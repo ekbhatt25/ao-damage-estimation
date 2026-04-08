@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir \
     fastapi "uvicorn[standard]" python-multipart \
     pillow numpy opencv-python-headless pycocotools \
-    huggingface_hub
+    huggingface_hub ultralytics
 
 # PyTorch CPU — HF Spaces free tier has no GPU
 RUN pip install --no-cache-dir \
@@ -27,6 +27,7 @@ import os; \
 os.makedirs('/app/models', exist_ok=True); \
 hf_hub_download('eerabhatt/ao-damage-models', 'parts_model.pth', local_dir='/app/models'); \
 hf_hub_download('eerabhatt/ao-damage-models', 'damage_model.pth', local_dir='/app/models'); \
+hf_hub_download('eerabhatt/ao-damage-models', 'best_car_damage_yolo.pt', local_dir='/app/models'); \
 print('Models downloaded successfully')"
 
 # HF Spaces requires port 7860

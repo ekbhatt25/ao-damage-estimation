@@ -17,8 +17,9 @@ DAMAGE_ANN_DIR = DATA_ROOT / "Car parts dataset" / "File1" / "ann"
 MODELS_DIR = ROOT / "models"
 MODELS_DIR.mkdir(exist_ok=True)
 
-PARTS_MODEL_PATH  = MODELS_DIR / "parts_model.pth"
-DAMAGE_MODEL_PATH = MODELS_DIR / "damage_model.pth"
+PARTS_MODEL_PATH       = MODELS_DIR / "parts_model.pth"
+DAMAGE_MODEL_PATH      = MODELS_DIR / "damage_model.pth"
+YOLO_DAMAGE_MODEL_PATH = MODELS_DIR / "best_car_damage_yolo.pt"
 
 # ── Classes ────────────────────────────────────────────────────────────────
 # Index 0 is always background for Mask R-CNN
