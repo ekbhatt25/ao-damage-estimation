@@ -21,16 +21,13 @@ RUN pip install --no-cache-dir \
 COPY backend/ ./backend/
 
 # Download model weights from HF Hub at build time
-ARG HF_TOKEN
-ENV HF_TOKEN=$HF_TOKEN
 RUN python -c "\
 from huggingface_hub import hf_hub_download; \
 import os; \
-token = os.environ.get('HF_TOKEN'); \
 os.makedirs('/app/models', exist_ok=True); \
-hf_hub_download('eerabhatt/ao-damage-models', 'parts_model.pth', local_dir='/app/models', token=token); \
-hf_hub_download('eerabhatt/ao-damage-models', 'damage_model.pth', local_dir='/app/models', token=token); \
-hf_hub_download('eerabhatt/ao-damage-models', 'best_car_damage_yolo.pt', local_dir='/app/models', token=token); \
+hf_hub_download('eerabhatt/ao-damage-models', 'parts_model.pth', local_dir='/app/models'); \
+hf_hub_download('eerabhatt/ao-damage-models', 'damage_model.pth', local_dir='/app/models'); \
+hf_hub_download('eerabhatt/ao-damage-models', 'best_car_damage_yolo.pt', local_dir='/app/models'); \
 print('Models downloaded successfully')"
 
 # HF Spaces requires port 7860
