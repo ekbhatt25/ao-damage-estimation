@@ -22,7 +22,7 @@ This project automates vehicle damage assessment for Auto-Owners Insurance using
 | **GradientBoosting Regressor** | ML cost estimation — predicts repair cost from part, damage type, and severity |
 | **Gemini 1.5 Flash** | LLM for natural language damage explanation and STP reasoning |
 
-The Mask R-CNN model was fine-tuned from a COCO-pretrained ResNet-50-FPN backbone using a two-phase transfer learning strategy: Phase 1 freezes the backbone and trains only the RPN and ROI heads; Phase 2 unfreezes all layers for full fine-tuning. Training used SGD with momentum, StepLR scheduling, mixed precision (AMP autocast + GradScaler), and gradient checkpointing to fit within 8 GB unified memory on a Jetson Orin Nano (CUDA 12.6, JetPack 6.1). The YOLOv8m damage model was fine-tuned separately on a labeled vehicle damage dataset. The cost estimation model is a scikit-learn GradientBoostingRegressor trained on repair cost data sourced from RepairPal and cross-referenced against SCRS/ASA labor rate surveys.
+Mask R-CNN was fine-tuned using two-phase transfer learning (frozen backbone → full fine-tuning) with AMP and gradient checkpointing on a Jetson Orin Nano. YOLOv8m was fine-tuned on a labeled vehicle damage dataset. The cost model was trained on repair cost data sourced from RepairPal, cross-referenced against SCRS/ASA labor rate surveys.
 
 ## Computer Vision Pipeline
 
