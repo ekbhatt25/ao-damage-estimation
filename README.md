@@ -118,10 +118,10 @@ To run locally, download `parts_model.pth` and `best_car_damage_yolo.pt` from th
 
 ## Model Performance
 
-| Model | mAP (COCO) | mAP@50 | Notes |
-|---|---|---|---|
-| Parts Mask R-CNN | 0.507 | 0.785 | Strong on large parts (door, windshield, wheel) |
-| Damage YOLOv8m | — | 0.751 | 6-class damage detection (dent, scratch, crack, glass shatter, lamp broken, tire flat) |
+| Model | mAP@50 | Notes |
+|---|---|---|
+| Parts Mask R-CNN | 0.785 | Strong on large parts (door, windshield, wheel) |
+| Damage YOLOv8m | 0.751 | 6-class damage detection (dent, scratch, crack, glass shatter, lamp broken, tire flat) |
 
 ## API
 
