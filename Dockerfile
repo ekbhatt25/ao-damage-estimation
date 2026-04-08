@@ -4,7 +4,7 @@ WORKDIR /app
 
 # System dependencies for OpenCV and PyTorch
 RUN apt-get update && apt-get install -y \
-    libglib2.0-0 libsm6 libxrender1 libxext6 libgomp1 \
+    libglib2.0-0 libsm6 libxrender1 libxext6 libgomp1 libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies (split for better layer caching)
