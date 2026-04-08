@@ -11,7 +11,7 @@ pinned: false
 
 ## Description
 
-This project automates vehicle damage assessment for Auto-Owners Insurance using a multi-model computer vision and generative AI pipeline. A user uploads a photo of a damaged vehicle and the system performs instance segmentation to identify which parts are damaged, classifies the damage type, and generates a structured output for downstream cost estimation. The pipeline is designed to be transparent — returning part-level detections with confidence scores, bounding boxes, segmentation masks, and severity ratings rather than a single opaque result.
+This project automates vehicle damage assessment for Auto-Owners Insurance using a multi-model computer vision, machine learning, and generative AI pipeline. A user uploads a photo of a damaged vehicle and the system identifies which parts are damaged, classifies the damage type, estimates repair costs, and produces a straight-through processing (STP) eligibility decision. The pipeline returns part-level detections with confidence scores, bounding boxes, segmentation masks, severity ratings, per-part cost ranges, and a Gemini-generated natural language explanation.
 
 ## Models
 
@@ -19,9 +19,10 @@ This project automates vehicle damage assessment for Auto-Owners Insurance using
 |---|---|
 | **Mask R-CNN** (ResNet-50-FPN) | Instance segmentation for car part detection (22 classes) |
 | **YOLOv8m** | Object detection for damage type classification (6 classes) |
-| **Gemini** *(planned)* | Multimodal LLM for natural language damage explanation and cost reasoning |
+| **GradientBoosting Regressor** | ML cost estimation — predicts repair cost from part, damage type, and severity |
+| **Gemini 1.5 Flash** | LLM for natural language damage explanation and STP reasoning |
 
-The Mask R-CNN model was fine-tuned from a COCO-pretrained ResNet-50-FPN backbone using a two-phase transfer learning strategy: Phase 1 freezes the backbone and trains only the RPN and ROI heads; Phase 2 unfreezes all layers for full fine-tuning. Training used SGD with momentum, StepLR scheduling, mixed precision (AMP autocast + GradScaler), and gradient checkpointing to fit within 8 GB unified memory on a Jetson Orin Nano (CUDA 12.6, JetPack 6.1). The YOLOv8m damage model was fine-tuned separately on a labeled vehicle damage dataset.
+The Mask R-CNN model was fine-tuned from a COCO-pretrained ResNet-50-FPN backbone using a two-phase transfer learning strategy: Phase 1 freezes the backbone and trains only the RPN and ROI heads; Phase 2 unfreezes all layers for full fine-tuning. Training used SGD with momentum, StepLR scheduling, mixed precision (AMP autocast + GradScaler), and gradient checkpointing to fit within 8 GB unified memory on a Jetson Orin Nano (CUDA 12.6, JetPack 6.1). The YOLOv8m damage model was fine-tuned separately on a labeled vehicle damage dataset. The cost estimation model is a scikit-learn GradientBoostingRegressor trained on repair cost data sourced from RepairPal and cross-referenced against SCRS/ASA labor rate surveys.
 
 ## Computer Vision Pipeline
 
@@ -36,13 +37,19 @@ Preprocessing (orientation correction, quality gate: blur detection, brightness 
     ├──▶ Damage YOLOv8m ──▶ Damage detections (class, bbox, score)
     │
     ▼
-IoU / Mask Overlap Cross-Reference
+IoU / Mask Overlap Cross-Reference + Severity Assignment
     │
     ▼
-Structured JSON Output (part, damage type, severity, confidence, bbox)
+Cost Estimation (GradientBoosting ML model)
+    ├── Repair cost per part (sourced from RepairPal)
+    ├── Regional labor rate adjustment by ZIP (body / mechanical / paint)
+    │   sourced from SCRS, ASA, and state Departments of Insurance
+    ├── Total cost range
+    └── Total loss flag (repair cost > 70% of estimated ACV)
     │
     ▼
-LLM Layer — Gemini (planned): cost reasoning + natural language explanation
+Gemini 1.5 Flash — natural language explanation + STP eligibility decision
+    └── STP criteria: cost < $1,500, confidence > 80%, no major damage, not a total loss
 ```
 
 ## Installation & Getting Started
@@ -60,9 +67,15 @@ cd backend
 python -m venv venv
 source venv/bin/activate
 pip install fastapi "uvicorn[standard]" python-multipart pillow numpy \
-    opencv-python-headless pycocotools ultralytics torch torchvision \
+    opencv-python-headless pycocotools ultralytics scikit-learn joblib \
+    google-generativeai python-dotenv torch torchvision \
     --index-url https://download.pytorch.org/whl/cpu
 uvicorn api:app --reload --port 8000
+```
+
+Set the following environment variables (or create a `.env` file in `/backend`):
+```
+GEMINI_API_KEY=your_key_here
 ```
 
 ### Frontend Setup
@@ -95,7 +108,12 @@ Both auto-redeploy on every push to `main`.
 ao-damage-estimation/
 ├── backend/
 │   ├── api.py              # FastAPI REST API — POST /detect endpoint
-│   ├── cv_detector.py      # Computer vision wrapper around Mask R-CNN inference pipeline
+│   ├── cv_detector.py      # CV wrapper: runs Mask R-CNN + YOLO, cross-references results
+│   ├── cost_estimator.py   # ML cost estimation (GradientBoosting) with labor rate adjustment
+│   ├── llm_client.py       # Gemini integration: explanation generation + STP decision
+│   ├── data/
+│   │   ├── repair_costs.csv    # Part repair/replace costs (sourced from RepairPal)
+│   │   └── labor_rates.csv     # Body/mechanical/paint rates by state (SCRS, ASA, DoIs)
 │   └── mask_rcnn/
 │       ├── config.py       # Hyperparameters, class labels, paths
 │       ├── model.py        # Mask R-CNN model factory (FastRCNNPredictor, MaskRCNNPredictor)
@@ -127,9 +145,9 @@ To run locally, download `parts_model.pth` and `best_car_damage_yolo.pt` from th
 
 ### `POST /detect`
 
-Upload a vehicle photo and receive structured damage detections.
+Upload a vehicle photo and receive structured damage detections, cost estimates, and STP decision.
 
-**Request:** `multipart/form-data` with `image` field
+**Request:** `multipart/form-data` with `image` and `zipCode` fields
 
 **Response:**
 ```json
@@ -144,25 +162,43 @@ Upload a vehicle photo and receive structured damage detections.
       "iou": 0.42
     }
   ],
-  "summary": {
-    "total_damaged_parts": 2,
-    "parts": ["Front-bumper", "Hood"],
-    "damage_types": ["Dent", "Scratch"]
+  "cost": {
+    "damaged_parts": [
+      {
+        "part": "Front-bumper",
+        "damage_type": "Dent",
+        "severity": "moderate",
+        "action": "repair",
+        "labor_category": "body",
+        "labor_rate": 58.0,
+        "cost_range": [373, 505]
+      }
+    ],
+    "total_cost_range": [373, 505],
+    "zip_code": "48823",
+    "labor_rates": {"body": 58.0, "mechanical": 80.0, "paint": 52.0},
+    "acv_estimate": 20000,
+    "total_loss": false
   },
+  "explanation": "Your vehicle sustained a moderate dent to the front bumper...",
+  "confidence_score": 0.84,
+  "stp_eligible": true,
+  "stp_reasoning": "Claim eligible for auto-approval: cost $439 under $1,500 threshold...",
   "inference_ms": 842.3
 }
 ```
 
 ### `GET /health`
 
-Returns model status.
+Returns model load status.
 
 ## Technologies Used
 
 **Frontend:** React, Tailwind CSS, Framer Motion  
 **Backend:** FastAPI, Uvicorn  
 **Computer Vision:** PyTorch, Mask R-CNN (ResNet-50-FPN), YOLOv8m (Ultralytics), OpenCV, NumPy, Pillow, torchvision, pycocotools  
-**LLM (planned):** Gemini, Google Generative AI SDK  
+**Cost Estimation:** scikit-learn (GradientBoostingRegressor), joblib  
+**LLM:** Gemini 1.5 Flash, Google Generative AI SDK  
 **Deployment:** Docker, Hugging Face Spaces, Vercel
 
 ## License
