@@ -211,8 +211,7 @@ Returns model load status.
 **Backend:** FastAPI, Uvicorn  
 **Computer Vision:** PyTorch, Mask R-CNN (ResNet-50-FPN), YOLOv8m (Ultralytics), OpenCV, NumPy, Pillow, torchvision, pycocotools  
 **Cost Estimation:** scikit-learn (GradientBoostingRegressor), joblib  
-**LLM:** Gemini 1.5 Flash, Google Generative AI SDK  
-**Audit & Controls:** JSONL audit trail, fraud signal detection, auto-escalation, adjuster override tracking  
+**LLM:** Gemini 1.5 Flash, Google Generative AI SDK   
 **Deployment:** Docker, Hugging Face Spaces, Vercel
 
 ## License
