@@ -147,7 +147,6 @@ def _severity_proxy(overlap: float, damage_area: int, part_area: int) -> str:
 # ── ML-based severity classification ──────────────────────────────────────────
 # YOLOv8n-cls model from nezahatkorkmaz/car-damage-level-detection-yolov8
 # Classes: {0: "01-minor", 1: "02-moderate", 2: "03-severe"}
-
 _SEVERITY_CLASS_MAP = {0: "minor", 1: "moderate", 2: "severe"}
 
 
@@ -255,8 +254,12 @@ def infer(
                 entry = damaged_part_map[pname]
                 if use_ml_severity:
                     severity = _classify_severity(
-                        severity_model, pre.image, dmg["bbox"],
-                        ov, dmg["mask_area"], part["mask_area"],
+                        severity_model,
+                        pre.image,
+                        dmg["bbox"],
+                        ov,
+                        dmg["mask_area"],
+                        part["mask_area"],
                     )
                 else:
                     severity = _severity_proxy(ov, dmg["mask_area"], part["mask_area"])
@@ -287,8 +290,12 @@ def infer(
                 }
             if use_ml_severity:
                 severity = _classify_severity(
-                    severity_model, pre.image, dmg["bbox"],
-                    ov, dmg["mask_area"], best_part["mask_area"],
+                    severity_model,
+                    pre.image,
+                    dmg["bbox"],
+                    ov,
+                    dmg["mask_area"],
+                    best_part["mask_area"],
                 )
             else:
                 severity = _severity_proxy(ov, dmg["mask_area"], best_part["mask_area"])
