@@ -133,6 +133,9 @@ class LLMClient:
                 f"${p['cost_range'][0]}-${p['cost_range'][1]} to {p['action']}"
             )
         
+        labor_rates = cost_output.get('labor_rates', {})
+        labor_note  = f"body: ${labor_rates.get('body', 58)}/hr" if labor_rates else "national average rates"
+
         prompt = f"""You are an auto insurance AI assistant. Generate a professional, customer-friendly claim explanation.
 
 VEHICLE: {vehicle_info['year']} {vehicle_info['make']} {vehicle_info['model']}
@@ -142,7 +145,7 @@ DAMAGE ASSESSMENT:
 
 TOTAL ESTIMATED COST: ${cost_output['total_cost_range'][0]}-${cost_output['total_cost_range'][1]}
 
-LOCATION: ZIP {cost_output['zip_code']} (labor rate: {cost_output['labor_rate_multiplier']}x national average)
+LOCATION: ZIP {cost_output['zip_code']} ({labor_note})
 
 Write a professional 2-3 sentence explanation for the customer that:
 1. Clearly describes what damage was found

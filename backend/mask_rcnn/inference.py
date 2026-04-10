@@ -208,6 +208,32 @@ def infer(
                     "severity_proxy":    severity,
                 })
 
+    # ── 4b. Fallback: if cross-reference yielded nothing but both models fired,
+    #         pair each damage with the best-overlapping part (any overlap > 0).
+    #         This prevents a silent empty result when spatial overlap is low.
+    if not damaged_part_map and parts and damages:
+        for dmg in damages:
+            best_part = max(parts, key=lambda p: _overlap_ratio(p["mask"], dmg["mask"]))
+            ov = _overlap_ratio(best_part["mask"], dmg["mask"])
+            pname = best_part["class_name"]
+            if pname not in damaged_part_map:
+                damaged_part_map[pname] = {
+                    "part":              pname,
+                    "part_confidence":   best_part["score"],
+                    "part_bbox":         best_part["bbox"],
+                    "part_mask_area_px": best_part["mask_area"],
+                    "damage_types":      [],
+                }
+            severity = _severity_proxy(ov, dmg["mask_area"], best_part["mask_area"])
+            damaged_part_map[pname]["damage_types"].append({
+                "type":           dmg["class_name"],
+                "confidence":     dmg["score"],
+                "overlap_ratio":  round(ov, 3),
+                "damage_bbox":    dmg["bbox"],
+                "damage_area_px": dmg["mask_area"],
+                "severity_proxy": severity,
+            })
+
     # ── 5. Build output dict ───────────────────────────────────────────────
     w, h = pre.image.size
     output = {

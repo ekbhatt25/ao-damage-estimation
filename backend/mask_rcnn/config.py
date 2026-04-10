@@ -72,11 +72,11 @@ LR_STEP_SIZE        = 10     # StepLR step size (epochs)
 LR_GAMMA            = 0.5
 
 # Detection score threshold for inference
-SCORE_THRESHOLD     = 0.50
+SCORE_THRESHOLD     = 0.30
 NMS_IOU_THRESHOLD   = 0.50
 
 # Damage-part overlap: minimum IoU to say a part is "affected"
-PART_DAMAGE_OVERLAP_THRESHOLD = 0.10
+PART_DAMAGE_OVERLAP_THRESHOLD = 0.05
 
 # ── Latency benchmark ──────────────────────────────────────────────────────
 LATENCY_WARMUP_RUNS = 5
