@@ -6,18 +6,18 @@ Model weights are loaded from paths defined in mask_rcnn/config.py:
   - models/damage_model.pth  (9-class damage types)
 """
 
-from mask_rcnn.inference import infer, get_device, _load_model
+from mask_rcnn.inference import infer, get_device, _load_model, _load_yolo_damage_model
 
 
 class CVDetector:
     def __init__(self):
-        """Load both Mask R-CNN models. Paths come from mask_rcnn/config.py."""
+        """Load Mask R-CNN parts model and YOLO damage model."""
         self.device = get_device()
         print("Loading CV models...")
         self.parts_model = _load_model("parts", self.device)
         print("✓ Mask R-CNN (parts) loaded")
-        self.damage_model = _load_model("damage", self.device)
-        print("✓ Mask R-CNN (damage types) loaded")
+        self.yolo_damage_model = _load_yolo_damage_model()
+        print("✓ YOLO (damage types) loaded")
         self.has_parts_model = True
 
     def detect(self, image_path: str, conf_threshold: float = 0.25) -> list[dict]:
@@ -33,7 +33,7 @@ class CVDetector:
         result = infer(
             image_path,
             parts_model=self.parts_model,
-            damage_model=self.damage_model,
+            yolo_damage_model=self.yolo_damage_model,
             device=self.device,
         )
 
