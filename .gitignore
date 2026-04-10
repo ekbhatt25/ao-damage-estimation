@@ -212,6 +212,19 @@ backend/.env
 backend/__pycache__/
 backend/*.pyc
 backend/results_*.json
+backend/*_results.txt
 frontend/node_modules/
 frontend/build/
 .DS_Store
+
+runs/
+backend/test_*.py
+backend/llm_eval_results.py
+
+# Model weights (too large for git, share via Drive/scp)
+models/*.pth
+models/*.pt
+
+# Data folders
+Car damages dataset/
+Car parts dataset/

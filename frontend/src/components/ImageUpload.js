@@ -1,7 +1,7 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Upload } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const ImageUpload = ({ onUpload }) => {
   const handleFileChange = (event) => {
@@ -27,7 +27,7 @@ const ImageUpload = ({ onUpload }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-xl mx-auto"
+      className="w-full max-w-2xl mx-auto"
     >
       <div
         className="relative border-2 border-dashed border-gray-600 rounded-2xl p-12 text-center hover:border-blue-500 transition-colors cursor-pointer bg-gray-800/50 backdrop-blur-sm"
@@ -46,9 +46,9 @@ const ImageUpload = ({ onUpload }) => {
           </div>
           <div>
             <h3 className="text-xl font-semibold text-white mb-2">Upload Car Image</h3>
-            <p className="text-gray-400">Drag and drop or click to browse</p>
+            <p className="text-black">Drag and drop or click to browse</p>
           </div>
-          <div className="flex gap-2 text-sm text-gray-500">
+          <div className="flex gap-2 text-sm text-black">
             <span>JPG</span>
             <span>PNG</span>
             <span>WEBP</span>

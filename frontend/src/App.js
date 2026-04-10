@@ -4,21 +4,31 @@ import ImageUpload from './components/ImageUpload';
 import LoadingOverlay from './components/LoadingOverlay';
 import ResultsDisplay from './components/ResultsDisplay';
 import './App.css';
+import aoLogo from './ao-logo.jpg';
+import aoTextLogo from './ao-text-logo.jpg';
 
 function App() {
   const [appState, setAppState] = useState('idle');
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState(null); // eslint-disable-line no-unused-vars
   const [results, setResults] = useState(null);
+  const [selectedZipCode, setSelectedZipCode] = useState('');
 
   const handleUpload = async (file) => {
+    if (!selectedZipCode) {
+      alert('Please select a ZIP code');
+      return;
+    }
+
     setImage(URL.createObjectURL(file));
     setAppState('analyzing');
 
     const formData = new FormData();
     formData.append('image', file);
+    formData.append('zipCode', selectedZipCode);
 
     try {
-      const response = await fetch('http://localhost:8000/api/analyze', {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_URL}/detect`, {
         method: 'POST',
         body: formData,
       });
@@ -29,12 +39,7 @@ function App() {
 
     } catch (error) {
       console.error('Error:', error);
-      setResults({
-        damageType: "Error",
-        severity: "N/A",
-        estimatedCost: "N/A",
-        recommendation: "Failed to connect to backend. Is it running?"
-      });
+      setResults({ error: "Failed to connect to backend. Is it running?" });
       setAppState('complete');
     }
   };
@@ -43,19 +48,18 @@ function App() {
     setImage(null);
     setResults(null);
     setAppState('idle');
+    setSelectedZipCode('');
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#084477] via-[#0a5694] to-[#084477] text-white selection:bg-[#084477]/30">
-      <div className="container mx-auto px-4 py-8 relative min-h-screen flex flex-col">
+      <div className="container mx-auto px-4 py-0 relative min-h-screen flex flex-col">
 
         {/* Header */}
-        <header className="flex items-center justify-center py-6 mb-12 border-b border-gray-800/50">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#084477] rounded-lg flex items-center justify-center">
-              <span className="font-bold text-white">AO</span>
-            </div>
-            <h1 className="text-xl font-bold tracking-tight">Auto-Owners<span className="text-[#0a5694]"> Damage Estimator</span></h1>
+        <header className="flex items-center justify-center py-2 mb-16 border-b border-gray-800/50 w-full">
+          <div className="flex items-center justify-center gap-4 w-full px-8">
+            <img src={aoLogo} alt="Auto-Owners logo" className="h-28 w-28 object-contain flex-shrink-0 border-4 border-[#1a3a6b]" />
+            <img src={aoTextLogo} alt="Auto-Owners Insurance" className="h-28 object-contain" />
           </div>
         </header>
 
@@ -71,13 +75,29 @@ function App() {
                 className="w-full"
               >
                 <div className="text-center mb-12">
-                  <h2 className="text-4xl md:text-5xl font-bold mb-6 text-black">
-                    Damaged Car Analysis
+                  <h2 className="text-3xl font-bold mb-6 text-black whitespace-nowrap">
+                    Vehicle Damage Estimator
                   </h2>
                   <p className="text-xl text-black max-w-2xl mx-auto">
                     Upload a photo of the damaged vehicle for an instant AI-powered repair cost estimation.
                   </p>
                 </div>
+
+                <div className="mb-8 max-w-md mx-auto bg-white/10 p-5 rounded-xl border border-white/20">
+                  <label className="block font-semibold mb-2" htmlFor="zipSelect">Select ZIP Code</label>
+                  <select
+                    id="zipSelect"
+                    value={selectedZipCode}
+                    onChange={(e) => setSelectedZipCode(e.target.value)}
+                    className="w-full px-3 py-2 rounded-md text-black"
+                  >
+                    <option value="">-- Please select ZIP code --</option>
+                    <option value="11111">11111</option>
+                    <option value="22222">22222</option>
+                    <option value="33333">33333</option>
+                  </select>
+                </div>
+
                 <ImageUpload onUpload={handleUpload} />
               </motion.div>
             )}
@@ -92,8 +112,8 @@ function App() {
           </AnimatePresence>
         </main>
 
-        <footer className="mt-12 py-6 text-center text-sm text-gray-400 border-t border-gray-800/50">
-          <p>&copy; 2026 Auto-Owners Damage Estimator. Repair cost & severity estimations are pending.</p>
+        <footer className="mt-12 py-6 text-center text-sm text-black border-t border-gray-800/50">
+          <p>&copy; 2026 Auto-Owners Vehicle Damage Estimator. Repair cost & severity estimations are pending.</p>
         </footer>
       </div>
     </div>
