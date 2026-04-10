@@ -65,14 +65,35 @@ Audit Trail (JSONL) — claim ID, timestamp, model version, full decision log
 
 - Python 3.10+
 - Node.js 18+
-- Model weights: `parts_model.pth` and `best_car_damage_yolo.pt` (place in `/models` at project root)
+- Docker (for containerized local run or production build)
+- Model weights: `parts_model.pth` and `best_car_damage_yolo.pt` — download from `eerabhatt/ao-damage-models` on Hugging Face and place in `/models` at project root
 
-### Backend Setup
+### Option A — Run with Docker (recommended)
 
 ```bash
+# Build and run the backend locally
+docker build -t ao-damage-estimation .
+docker run -p 7860:7860 -e GEMINI_API_KEY=your_key_here ao-damage-estimation
+```
+
+The API will be available at `http://localhost:7860`
+
+Install Docker: [docs.docker.com/get-docker](https://docs.docker.com/get-docker)
+
+### Option B — Run without Docker
+
+**Backend:**
+
+```bash
+# Install system dependency required by OpenCV
+# macOS:
+brew install libgl1
+# Ubuntu/Debian:
+sudo apt-get install libgl1
+
 cd backend
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install fastapi "uvicorn[standard]" python-multipart pillow numpy \
     opencv-python-headless pycocotools ultralytics scikit-learn joblib \
     google-generativeai python-dotenv torch torchvision \
@@ -80,12 +101,12 @@ pip install fastapi "uvicorn[standard]" python-multipart pillow numpy \
 uvicorn api:app --reload --port 8000
 ```
 
-Set the following environment variables (or create a `.env` file in `/backend`):
+Create a `.env` file in `/backend`:
 ```
 GEMINI_API_KEY=your_key_here
 ```
 
-### Frontend Setup
+**Frontend:**
 
 ```bash
 cd frontend
