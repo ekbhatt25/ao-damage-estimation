@@ -11,15 +11,9 @@ function App() {
   const [appState, setAppState] = useState('idle');
   const [image, setImage] = useState(null); // eslint-disable-line no-unused-vars
   const [results, setResults] = useState(null);
-  const [selectedZipCode, setSelectedZipCode] = useState('');
   const abortControllerRef = React.useRef(null);
 
   const handleUpload = async (file) => {
-    if (!selectedZipCode) {
-      alert('Please select a ZIP code');
-      return;
-    }
-
     setImage(URL.createObjectURL(file));
     setAppState('analyzing');
 
@@ -28,7 +22,6 @@ function App() {
 
     const formData = new FormData();
     formData.append('image', file);
-    formData.append('zipCode', selectedZipCode);
 
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -62,7 +55,6 @@ function App() {
     setImage(null);
     setResults(null);
     setAppState('idle');
-    setSelectedZipCode('');
   };
 
   return (
@@ -95,21 +87,6 @@ function App() {
                   <p className="text-xl text-black max-w-2xl mx-auto">
                     Upload a photo of the damaged vehicle for an instant AI-powered repair cost estimation.
                   </p>
-                </div>
-
-                <div className="mb-8 max-w-md mx-auto bg-white/10 p-5 rounded-xl border border-white/20">
-                  <label className="block font-semibold mb-2" htmlFor="zipSelect">Select ZIP Code</label>
-                  <select
-                    id="zipSelect"
-                    value={selectedZipCode}
-                    onChange={(e) => setSelectedZipCode(e.target.value)}
-                    className="w-full px-3 py-2 rounded-md text-black"
-                  >
-                    <option value="">-- Please select ZIP code --</option>
-                    <option value="11111">11111</option>
-                    <option value="22222">22222</option>
-                    <option value="33333">33333</option>
-                  </select>
                 </div>
 
                 <ImageUpload onUpload={handleUpload} />
