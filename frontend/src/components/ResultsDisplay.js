@@ -42,7 +42,7 @@ const ResultsDisplay = ({ results, onReset }) => {
                 </div>
                 {error
                     ? <p className="text-red-400 ml-11">{error}</p>
-                    : <p className="text-gray-400 ml-11">
+                    : <p className="text-black ml-11">
                         {summary.total_damaged_parts ?? 0} damaged part{summary.total_damaged_parts !== 1 ? 's' : ''} detected
                       </p>
                 }
