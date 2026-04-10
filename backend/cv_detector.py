@@ -44,10 +44,15 @@ class CVDetector:
             severity_model=self.severity_model,
         )
 
+        seen = set()
         detections = []
         for part_entry in result.get("damaged_parts", []):
             for dmg in part_entry.get("damage_types", []):
                 if dmg["confidence"] >= conf_threshold:
+                    key = (part_entry["part"], dmg["type"].title())
+                    if key in seen:
+                        continue
+                    seen.add(key)
                     detections.append({
                         "part":              part_entry["part"],
                         "damage_type":       dmg["type"].title(),
