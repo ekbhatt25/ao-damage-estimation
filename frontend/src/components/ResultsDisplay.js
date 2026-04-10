@@ -151,7 +151,7 @@ const ResultsDisplay = ({ results, onReset }) => {
 
                 {/* Claim ID */}
                 {claim_id && (
-                    <p className="text-gray-600 text-xs text-center">Claim ID: {claim_id}</p>
+                    <p className="text-black text-xs text-center">Claim ID: {claim_id}</p>
                 )}
 
                 <div className="pt-2 border-t border-gray-700">
