@@ -19,8 +19,10 @@ import numpy as np
 import torch
 from PIL import Image
 
+from ultralytics import YOLO as UltralyticsYOLO
+
 from .config import (
-    PARTS_MODEL_PATH, DAMAGE_MODEL_PATH,
+    PARTS_MODEL_PATH, DAMAGE_MODEL_PATH, YOLO_DAMAGE_MODEL_PATH,
     PART_CLASSES, DAMAGE_CLASSES,
     SCORE_THRESHOLD, PART_DAMAGE_OVERLAP_THRESHOLD,
     MODELS_DIR,
@@ -32,6 +34,45 @@ import torchvision.transforms.functional as TF
 
 def get_device() -> torch.device:
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def _load_yolo_damage_model() -> UltralyticsYOLO:
+    if not YOLO_DAMAGE_MODEL_PATH.exists():
+        raise FileNotFoundError(
+            f"YOLO damage model not found at {YOLO_DAMAGE_MODEL_PATH}."
+        )
+    return UltralyticsYOLO(str(YOLO_DAMAGE_MODEL_PATH))
+
+
+def _run_yolo_damage_model(
+    model: UltralyticsYOLO,
+    image_path: str,
+    score_threshold: float = SCORE_THRESHOLD,
+) -> list[dict]:
+    """Run YOLO damage model; returns detections in the same format as _run_model."""
+    results = model(image_path, conf=score_threshold, verbose=False)[0]
+    img_h, img_w = results.orig_shape
+    class_names = model.names  # {0: 'dent', 1: 'scratch', ...}
+
+    detections = []
+    for box in results.boxes:
+        score = float(box.conf[0])
+        label = int(box.cls[0])
+        x1, y1, x2, y2 = [round(float(v)) for v in box.xyxy[0]]
+
+        # Synthesise a bbox mask so overlap logic works unchanged
+        bin_mask = np.zeros((img_h, img_w), dtype=np.uint8)
+        bin_mask[max(0, y1):min(img_h, y2), max(0, x1):min(img_w, x2)] = 1
+
+        detections.append({
+            "label":      label,
+            "class_name": class_names.get(label, "unknown"),
+            "score":      round(score, 4),
+            "bbox":       [x1, y1, x2, y2],
+            "mask":       bin_mask,
+            "mask_area":  int(bin_mask.sum()),
+        })
+    return detections
 
 
 def _load_model(mode: str, device: torch.device) -> torch.nn.Module:
@@ -93,7 +134,7 @@ def _overlap_ratio(mask_a: np.ndarray, mask_b: np.ndarray) -> float:
 def _severity_proxy(overlap: float, damage_area: int, part_area: int) -> str:
     """
     Heuristic severity based on overlap ratio and relative damage area.
-    Not a learned classifier — replace with a trained model if needed.
+    Not a learned classifier — we might replace this with a trained model."
     """
     ratio = damage_area / max(part_area, 1)
     if ratio > 0.40 or overlap > 0.60:
@@ -106,8 +147,9 @@ def _severity_proxy(overlap: float, damage_area: int, part_area: int) -> str:
 def infer(
     image_path: str,
     parts_model: torch.nn.Module = None,
-    damage_model: torch.nn.Module = None,
+    yolo_damage_model: UltralyticsYOLO = None,
     device: torch.device = None,
+    damage_model: torch.nn.Module = None,  # unused, kept for backwards compat
 ) -> dict:
     """
     Full pipeline for a single image:
@@ -123,8 +165,8 @@ def infer(
         device = get_device()
     if parts_model is None:
         parts_model = _load_model("parts", device)
-    if damage_model is None:
-        damage_model = _load_model("damage", device)
+    if yolo_damage_model is None:
+        yolo_damage_model = _load_yolo_damage_model()
 
     # ── 1. Preprocess ──────────────────────────────────────────────────────
     t_start   = time.perf_counter()
@@ -135,8 +177,8 @@ def infer(
 
     # ── 2 & 3. Model inference ─────────────────────────────────────────────
     t_inf   = time.perf_counter()
-    parts   = _run_model(parts_model,  image_t, device, PART_CLASSES)
-    damages = _run_model(damage_model, image_t, device, DAMAGE_CLASSES)
+    parts   = _run_model(parts_model, image_t, device, PART_CLASSES)
+    damages = _run_yolo_damage_model(yolo_damage_model, image_path, SCORE_THRESHOLD)
     infer_ms = (time.perf_counter() - t_inf) * 1000
 
     # ── 4. Cross-reference: which parts are damaged? ───────────────────────
