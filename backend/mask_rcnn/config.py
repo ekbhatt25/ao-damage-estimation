@@ -76,7 +76,8 @@ LR_STEP_SIZE        = 10     # StepLR step size (epochs)
 LR_GAMMA            = 0.5
 
 # Detection score threshold for inference
-SCORE_THRESHOLD     = 0.30
+SCORE_THRESHOLD     = 0.30   # internal: keep low to catch real damage
+DISPLAY_THRESHOLD   = 0.45   # output: filter final detections shown to user
 NMS_IOU_THRESHOLD   = 0.50
 
 # Damage-part overlap: minimum IoU to say a part is "affected"

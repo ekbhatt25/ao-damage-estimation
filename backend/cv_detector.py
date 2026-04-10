@@ -7,6 +7,7 @@ Model weights are loaded from paths defined in mask_rcnn/config.py:
 """
 
 from mask_rcnn.inference import infer, get_device, _load_model, _load_yolo_damage_model, _load_severity_model
+from mask_rcnn.config import DISPLAY_THRESHOLD
 
 
 class CVDetector:
@@ -25,7 +26,7 @@ class CVDetector:
             print("⚠ Severity classifier unavailable — using heuristic fallback")
         self.has_parts_model = True
 
-    def detect(self, image_path: str, conf_threshold: float = 0.25) -> list[dict]:
+    def detect(self, image_path: str, conf_threshold: float = DISPLAY_THRESHOLD) -> list[dict]:
         """
         Run the two-model Mask R-CNN pipeline on an image.
 
