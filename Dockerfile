@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir \
     fastapi "uvicorn[standard]" python-multipart \
     pillow numpy opencv-python-headless pycocotools \
-    huggingface_hub ultralytics scikit-learn joblib
+    huggingface_hub ultralytics scikit-learn joblib \
+    google-generativeai python-dotenv
 
 # PyTorch CPU — HF Spaces free tier has no GPU
 RUN pip install --no-cache-dir \
@@ -28,8 +29,7 @@ os.makedirs('/app/models', exist_ok=True); \
 hf_hub_download('eerabhatt/ao-damage-models', 'parts_model.pth', local_dir='/app/models'); \
 hf_hub_download('eerabhatt/ao-damage-models', 'damage_model.pth', local_dir='/app/models'); \
 hf_hub_download('eerabhatt/ao-damage-models', 'best_car_damage_yolo.pt', local_dir='/app/models'); \
-hf_hub_download('nezahatkorkmaz/car-damage-level-detection-yolov8', 'car-damage.pt', local_dir='/app/models'); \
-import shutil; shutil.copy('/app/models/car-damage.pt', '/app/models/severity_yolov8_cls.pt'); \
+hf_hub_download('eerabhatt/ao-damage-models', 'severity_yolov8_cls.pt', local_dir='/app/models'); \
 print('Models downloaded successfully')"
 
 # HF Spaces requires port 7860

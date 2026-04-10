@@ -237,7 +237,7 @@ def infer(
 
     # ── 3. YOLO damage ────────────────────────────────────────────────────
     t_yolo  = time.perf_counter()
-    damages = _run_yolo_damage_model(yolo_damage_model, image_path, SCORE_THRESHOLD)
+    damages = _run_yolo_damage_model(yolo_damage_model, pre.image, SCORE_THRESHOLD)
     yolo_ms = (time.perf_counter() - t_yolo) * 1000
     print(f"[TIMING] yolo_damage:   {yolo_ms:.0f}ms  damages_found={len(damages)}")
 
