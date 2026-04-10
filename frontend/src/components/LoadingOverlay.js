@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Pause, Play } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 
-const LoadingOverlay = ({ isPaused, onTogglePause }) => {
+const LoadingOverlay = ({ onCancel }) => {
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -13,7 +13,7 @@ const LoadingOverlay = ({ isPaused, onTogglePause }) => {
             <div className="text-center space-y-8">
                 <div className="relative">
                     <motion.div
-                        animate={{ rotate: isPaused ? 0 : 360 }}
+                        animate={{ rotate: 360 }}
                         transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                         className="w-24 h-24 border-4 border-blue-500/30 border-t-blue-500 rounded-full"
                     />
@@ -23,29 +23,16 @@ const LoadingOverlay = ({ isPaused, onTogglePause }) => {
                 </div>
 
                 <div className="space-y-2">
-                    <h3 className="text-2xl font-bold text-white">
-                        {isPaused ? 'Analysis Paused' : 'Analyzing Damage...'}
-                    </h3>
-                    <p className="text-gray-400">
-                        {isPaused ? 'Click resume to continue' : 'Our AI is scanning the vehicle'}
-                    </p>
+                    <h3 className="text-2xl font-bold text-white">Analyzing Damage...</h3>
+                    <p className="text-gray-400">Our AI is scanning the vehicle</p>
                 </div>
 
                 <button
-                    onClick={onTogglePause}
+                    onClick={onCancel}
                     className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all mx-auto"
                 >
-                    {isPaused ? (
-                        <>
-                            <Play className="w-5 h-5" />
-                            <span>Resume Analysis</span>
-                        </>
-                    ) : (
-                        <>
-                            <Pause className="w-5 h-5" />
-                            <span>Pause Analysis</span>
-                        </>
-                    )}
+                    <X className="w-5 h-5" />
+                    <span>Cancel Analysis</span>
                 </button>
             </div>
         </motion.div>
