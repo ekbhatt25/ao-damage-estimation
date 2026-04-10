@@ -51,7 +51,7 @@ def _run_yolo_damage_model(
     score_threshold: float = SCORE_THRESHOLD,
 ) -> list[dict]:
     """Run YOLO damage model; returns detections in the same format as _run_model."""
-    results = model(image_path, conf=score_threshold, verbose=False)[0]
+    results = model(image_path, conf=score_threshold, verbose=False, device="cpu")[0]
     img_h, img_w = results.orig_shape
     class_names = model.names  # {0: 'dent', 1: 'scratch', ...}
 
