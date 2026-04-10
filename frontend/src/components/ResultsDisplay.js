@@ -108,7 +108,7 @@ const ResultsDisplay = ({ results, onReset }) => {
 
                 {/* Detections */}
                 {detections.length === 0 && !error && (
-                    <p className="text-gray-400 text-center py-4">No damage detected in this image.</p>
+                    <p className="text-black text-center py-4">No damage detected in this image.</p>
                 )}
 
                 {detections.map((det, i) => (
