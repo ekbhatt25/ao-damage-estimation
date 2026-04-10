@@ -30,7 +30,8 @@ class LLMClient:
         # Determine STP eligibility
         total_cost = sum(cost_output['total_cost_range']) / 2
         severity_levels = [p['severity'] for p in cost_output['damaged_parts']]
-        stp_decision = self._decide_stp(total_cost, confidence, severity_levels)
+        total_loss = cost_output.get('total_loss', False)
+        stp_decision = self._decide_stp(total_cost, confidence, severity_levels, total_loss)
         
         # Generate explanation
         explanation = self._generate_explanation(
@@ -40,6 +41,13 @@ class LLMClient:
             stp_decision
         )
         
+        # Auto-escalation: force manual review if confidence too low
+        requires_review = (
+            not stp_decision['stp_eligible'] or
+            confidence < 0.60 or
+            cost_output.get('total_loss', False)
+        )
+
         # Build final output
         output = {
             'damaged_parts': cost_output['damaged_parts'],
@@ -47,7 +55,11 @@ class LLMClient:
             'explanation': explanation,
             'confidence_score': confidence,
             'stp_eligible': stp_decision['stp_eligible'],
-            'stp_reasoning': stp_decision['stp_reasoning']
+            'stp_reasoning': stp_decision['stp_reasoning'],
+            'requires_adjuster_review': requires_review,
+            'total_loss': cost_output.get('total_loss', False),
+            'override_allowed': True,   # adjuster can always override STP decision
+            'model_version': '1.0.0',
         }
         
         # Validate structure
@@ -75,33 +87,36 @@ class LLMClient:
         
         return round(combined, 2)
     
-    def _decide_stp(self, total_cost, confidence, severity_levels):
+    def _decide_stp(self, total_cost, confidence, severity_levels, total_loss=False):
         """STP recommendation"""
-        
-        cost_ok = total_cost < 1500
+
+        cost_ok       = total_cost < 1500
         confidence_ok = confidence > 0.80
-        severity_ok = 'major' not in severity_levels
-        
-        stp_eligible = cost_ok and confidence_ok and severity_ok
-        
+        severity_ok   = 'major' not in severity_levels
+        not_total_loss = not total_loss
+
+        stp_eligible = cost_ok and confidence_ok and severity_ok and not_total_loss
+
         if stp_eligible:
             reasoning = (
                 f"Claim eligible for auto-approval: "
                 f"cost ${total_cost:.0f} under $1,500 threshold, "
                 f"{confidence:.0%} confidence meets requirement, "
-                f"no major damage detected."
+                f"no major damage detected, not a total loss."
             )
         else:
             reasons = []
+            if total_loss:
+                reasons.append("repair cost exceeds 70% of vehicle ACV — total loss")
             if not cost_ok:
                 reasons.append(f"cost ${total_cost:.0f} exceeds $1,500")
             if not confidence_ok:
                 reasons.append(f"{confidence:.0%} confidence below 80%")
             if not severity_ok:
                 reasons.append("major damage requires review")
-            
+
             reasoning = f"Manual adjuster review required: {', '.join(reasons)}."
-        
+
         return {
             'stp_eligible': stp_eligible,
             'stp_reasoning': reasoning
