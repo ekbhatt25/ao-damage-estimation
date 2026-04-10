@@ -49,7 +49,7 @@ class CVDetector:
                 if dmg["confidence"] >= conf_threshold:
                     detections.append({
                         "part":              part_entry["part"],
-                        "damage_type":       dmg["type"],
+                        "damage_type":       dmg["type"].title(),
                         "confidence":        (part_entry["part_confidence"] + dmg["confidence"]) / 2,
                         "bbox":              dmg["damage_bbox"],
                         "part_confidence":   part_entry["part_confidence"],
