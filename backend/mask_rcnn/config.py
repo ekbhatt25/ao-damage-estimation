@@ -48,6 +48,7 @@ IMAGENET_STD  = [0.229, 0.224, 0.225]
 
 # Quality gate thresholds
 MIN_RESOLUTION      = 100     # minimum side length in px
+MAX_INFERENCE_SIZE  = 800     # cap long side before model inference (CPU speed)
 BLUR_THRESHOLD      = 80.0    # Laplacian variance below this → blurry
 BRIGHTNESS_MIN      = 20.0    # mean pixel value (0-255)
 BRIGHTNESS_MAX      = 235.0

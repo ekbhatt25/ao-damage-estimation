@@ -11,7 +11,7 @@ from PIL import Image, ExifTags
 from dataclasses import dataclass, field
 from typing import Optional
 from .config import (
-    MIN_RESOLUTION, BLUR_THRESHOLD, BRIGHTNESS_MIN, BRIGHTNESS_MAX,
+    MIN_RESOLUTION, MAX_INFERENCE_SIZE, BLUR_THRESHOLD, BRIGHTNESS_MIN, BRIGHTNESS_MAX,
 )
 
 
@@ -159,6 +159,13 @@ def preprocess_image(
         img = img.convert("RGB")
 
     img, rotated = correct_orientation(img)
+
+    # Cap resolution for CPU inference speed — resize if long side exceeds MAX_INFERENCE_SIZE
+    w, h = img.size
+    long_side = max(w, h)
+    if long_side > MAX_INFERENCE_SIZE:
+        scale = MAX_INFERENCE_SIZE / long_side
+        img = img.resize((round(w * scale), round(h * scale)), Image.LANCZOS)
 
     report = quality_gate(img) if run_quality_gate else QualityReport(
         passed=True, blur=0.0, brightness=0.0, resolution=img.size, issues=[]
