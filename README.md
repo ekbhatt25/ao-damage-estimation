@@ -30,7 +30,10 @@ Mask R-CNN was fine-tuned using two-phase transfer learning (frozen backbone →
 Image Upload
     │
     ▼
-Preprocessing (orientation correction, quality gate: blur detection, brightness check)
+Preprocessing
+    ├── Orientation correction (EXIF)
+    ├── Quality gate (blur, brightness, resolution)
+    └── Fraud signals (pixel variance, sharpness anomaly, aspect ratio)
     │
     ├──▶ Parts Mask R-CNN ──▶ Part detections (class, bbox, mask, score)
     │
@@ -42,14 +45,18 @@ IoU / Mask Overlap Cross-Reference + Severity Assignment
     ▼
 Cost Estimation (GradientBoosting ML model)
     ├── Repair cost per part (sourced from RepairPal)
-    ├── Regional labor rate adjustment by ZIP (body / mechanical / paint)
+    ├── Regional labor rates by ZIP — body / mechanical / paint
     │   sourced from SCRS, ASA, and state Departments of Insurance
-    ├── Total cost range
+    ├── Total cost range (±15% band)
     └── Total loss flag (repair cost > 70% of estimated ACV)
     │
     ▼
 Gemini 1.5 Flash — natural language explanation + STP eligibility decision
-    └── STP criteria: cost < $1,500, confidence > 80%, no major damage, not a total loss
+    ├── STP criteria: cost < $1,500, confidence > 80%, no major damage, not a total loss
+    └── Auto-escalation to adjuster if confidence < 60% or total loss
+    │
+    ▼
+Audit Trail (JSONL) — claim ID, timestamp, model version, full decision log
 ```
 
 ## Installation & Getting Started
@@ -111,6 +118,7 @@ ao-damage-estimation/
 │   ├── cv_detector.py      # CV wrapper: runs Mask R-CNN + YOLO, cross-references results
 │   ├── cost_estimator.py   # ML cost estimation (GradientBoosting) with labor rate adjustment
 │   ├── llm_client.py       # Gemini integration: explanation generation + STP decision
+│   ├── audit_logger.py     # JSONL audit trail — one record per claim
 │   ├── data/
 │   │   ├── repair_costs.csv    # Part repair/replace costs (sourced from RepairPal)
 │   │   └── labor_rates.csv     # Body/mechanical/paint rates by state (SCRS, ASA, DoIs)
@@ -121,10 +129,11 @@ ao-damage-estimation/
 │       ├── train.py        # Two-phase training loop with AMP and gradient checkpointing
 │       ├── inference.py    # Full inference pipeline with mask overlap cross-referencing
 │       ├── evaluate.py     # COCO mAP evaluation (pycocotools)
-│       └── preprocess.py   # Image quality gating and orientation correction
+│       └── preprocess.py   # Image quality gating, orientation correction, fraud signals
 ├── frontend/
 │   └── src/                # React SPA
 ├── models/                 # Model weights (not in git — hosted on HF Hub)
+├── audit_log.jsonl         # Append-only claim audit log (not in git)
 └── Dockerfile              # Containerized deployment for HF Spaces
 ```
 
@@ -184,6 +193,10 @@ Upload a vehicle photo and receive structured damage detections, cost estimates,
   "confidence_score": 0.84,
   "stp_eligible": true,
   "stp_reasoning": "Claim eligible for auto-approval: cost $439 under $1,500 threshold...",
+  "requires_adjuster_review": false,
+  "override_allowed": true,
+  "model_version": "1.0.0",
+  "fraud_flags": [],
   "inference_ms": 842.3
 }
 ```
@@ -199,6 +212,7 @@ Returns model load status.
 **Computer Vision:** PyTorch, Mask R-CNN (ResNet-50-FPN), YOLOv8m (Ultralytics), OpenCV, NumPy, Pillow, torchvision, pycocotools  
 **Cost Estimation:** scikit-learn (GradientBoostingRegressor), joblib  
 **LLM:** Gemini 1.5 Flash, Google Generative AI SDK  
+**Audit & Controls:** JSONL audit trail, fraud signal detection, auto-escalation, adjuster override tracking  
 **Deployment:** Docker, Hugging Face Spaces, Vercel
 
 ## License
