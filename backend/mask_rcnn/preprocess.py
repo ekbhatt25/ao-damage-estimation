@@ -67,14 +67,16 @@ class QualityReport:
     brightness: float
     resolution: tuple[int, int]      # (width, height)
     issues: list[str] = field(default_factory=list)
+    fraud_flags: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
-            "passed":     self.passed,
-            "blur_score": round(self.blur, 2),
-            "brightness": round(self.brightness, 2),
-            "resolution": list(self.resolution),
-            "issues":     self.issues,
+            "passed":      self.passed,
+            "blur_score":  round(self.blur, 2),
+            "brightness":  round(self.brightness, 2),
+            "resolution":  list(self.resolution),
+            "issues":      self.issues,
+            "fraud_flags": self.fraud_flags,
         }
 
 
@@ -87,6 +89,7 @@ def quality_gate(img: Image.Image) -> QualityReport:
     arr = np.array(img.convert("RGB"))
     w, h = img.size
     issues: list[str] = []
+    fraud_flags: list[str] = []
 
     b_score = blur_score(arr)
     b_mean  = brightness_mean(arr)
@@ -100,12 +103,28 @@ def quality_gate(img: Image.Image) -> QualityReport:
     if b_mean > BRIGHTNESS_MAX:
         issues.append(f"too_bright (mean={b_mean:.1f})")
 
+    # ── Basic fraud signals ────────────────────────────────────────────────
+    # Extremely uniform image — possible screenshot or digital manipulation
+    channel_stds = [arr[:, :, c].std() for c in range(3)]
+    if max(channel_stds) < 15.0:
+        fraud_flags.append("low_pixel_variance (possible screenshot or solid fill)")
+
+    # Suspiciously small file for claimed damage — may indicate stock photo
+    if w * h > 1_000_000 and b_score > 2000:
+        fraud_flags.append("unusually_sharp_for_damage_photo (possible stock image)")
+
+    # Near-perfect aspect ratio — phone photos are rarely exact 16:9 or 4:3
+    ratio = w / max(h, 1)
+    if abs(ratio - round(ratio * 3) / 3) < 0.001:
+        fraud_flags.append("exact_aspect_ratio (possible edited or synthetic image)")
+
     return QualityReport(
         passed=len(issues) == 0,
         blur=b_score,
         brightness=b_mean,
         resolution=(w, h),
         issues=issues,
+        fraud_flags=fraud_flags,
     )
 
 
