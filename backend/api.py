@@ -122,14 +122,14 @@ async def detect(
         t_cv = time.perf_counter()
         detections = cv_detector.detect(str(temp_path))
         cv_ms = round((time.perf_counter() - t_cv) * 1000, 1)
-        print(f"[TIMING] cv_total:      {cv_ms}ms  detections={len(detections)}")
+        print(f"[TIMING] cv_total:      {cv_ms}ms  detections={len(detections)}", flush=True)
         inference_ms = cv_ms
 
         # ── 2. Cost estimation ────────────────────────────────────────────────
         t_cost = time.perf_counter()
         cost_output = cost_estimator.estimate(detections, zip_code=zipCode)
         cost_ms = round((time.perf_counter() - t_cost) * 1000, 1)
-        print(f"[TIMING] cost_estimator:{cost_ms}ms")
+        print(f"[TIMING] cost_estimator:{cost_ms}ms", flush=True)
 
         # ── 3. LLM explanation + STP decision ─────────────────────────────────
         vehicle_info = {"year": 2021, "make": "Vehicle", "model": ""}
@@ -145,8 +145,8 @@ async def detect(
         else:
             llm_output = _rule_based_stp(cost_output, detections)
         llm_ms = round((time.perf_counter() - t_llm) * 1000, 1)
-        print(f"[TIMING] stp_decision:  {llm_ms}ms  stp={llm_output.get('stp_eligible')}")
-        print(f"[TIMING] request_total: {round((time.perf_counter() - t0) * 1000, 1)}ms")
+        print(f"[TIMING] stp_decision:  {llm_ms}ms  stp={llm_output.get('stp_eligible')}", flush=True)
+        print(f"[TIMING] request_total: {round((time.perf_counter() - t0) * 1000, 1)}ms", flush=True)
 
         # ── 4. Audit trail ────────────────────────────────────────────────────
         try:
