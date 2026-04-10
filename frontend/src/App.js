@@ -12,6 +12,8 @@ function App() {
   const [image, setImage] = useState(null); // eslint-disable-line no-unused-vars
   const [results, setResults] = useState(null);
   const [selectedZipCode, setSelectedZipCode] = useState('');
+  const [isPaused, setIsPaused] = useState(false);
+  const abortControllerRef = React.useRef(null);
 
   const handleUpload = async (file) => {
     if (!selectedZipCode) {
@@ -21,6 +23,10 @@ function App() {
 
     setImage(URL.createObjectURL(file));
     setAppState('analyzing');
+    setIsPaused(false);
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     const formData = new FormData();
     formData.append('image', file);
@@ -31,6 +37,7 @@ function App() {
       const response = await fetch(`${API_URL}/detect`, {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       });
 
       const data = await response.json();
@@ -38,16 +45,33 @@ function App() {
       setAppState('complete');
 
     } catch (error) {
-      console.error('Error:', error);
-      setResults({ error: "Failed to connect to backend. Is it running?" });
-      setAppState('complete');
+      if (error.name === 'AbortError') {
+        setAppState('idle');
+        setIsPaused(false);
+      } else {
+        console.error('Error:', error);
+        setResults({ error: "Failed to connect to backend. Is it running?" });
+        setAppState('complete');
+      }
+    }
+  };
+
+  const handleTogglePause = () => {
+    if (!isPaused) {
+      abortControllerRef.current?.abort();
+      setIsPaused(true);
+    } else {
+      setIsPaused(false);
+      setAppState('idle');
     }
   };
 
   const handleReset = () => {
+    abortControllerRef.current?.abort();
     setImage(null);
     setResults(null);
     setAppState('idle');
+    setIsPaused(false);
     setSelectedZipCode('');
   };
 
@@ -103,7 +127,7 @@ function App() {
             )}
 
             {appState === 'analyzing' && (
-              <LoadingOverlay isPaused={false} onTogglePause={() => {}} />
+              <LoadingOverlay isPaused={isPaused} onTogglePause={handleTogglePause} />
             )}
 
             {appState === 'complete' && (
