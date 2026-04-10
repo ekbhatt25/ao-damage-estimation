@@ -23,6 +23,7 @@ from ultralytics import YOLO as UltralyticsYOLO
 
 from .config import (
     PARTS_MODEL_PATH, DAMAGE_MODEL_PATH, YOLO_DAMAGE_MODEL_PATH,
+    SEVERITY_MODEL_PATH, SEVERITY_MODEL_HF_REPO, SEVERITY_MODEL_HF_FILE,
     PART_CLASSES, DAMAGE_CLASSES,
     SCORE_THRESHOLD, PART_DAMAGE_OVERLAP_THRESHOLD,
     MODELS_DIR,
@@ -133,8 +134,7 @@ def _overlap_ratio(mask_a: np.ndarray, mask_b: np.ndarray) -> float:
 
 def _severity_proxy(overlap: float, damage_area: int, part_area: int) -> str:
     """
-    Heuristic severity based on overlap ratio and relative damage area.
-    Not a learned classifier — we might replace this with a trained model."
+    Heuristic fallback when the ML severity model is unavailable.
     """
     ratio = damage_area / max(part_area, 1)
     if ratio > 0.40 or overlap > 0.60:
@@ -144,19 +144,71 @@ def _severity_proxy(overlap: float, damage_area: int, part_area: int) -> str:
     return "minor"
 
 
+# ── ML-based severity classification ──────────────────────────────────────────
+# YOLOv8n-cls model from nezahatkorkmaz/car-damage-level-detection-yolov8
+# Classes: {0: "01-minor", 1: "02-moderate", 2: "03-severe"}
+
+_SEVERITY_CLASS_MAP = {0: "minor", 1: "moderate", 2: "severe"}
+
+
+def _load_severity_model() -> UltralyticsYOLO | None:
+    """Load the YOLOv8 severity classifier, downloading from HF if needed."""
+    if SEVERITY_MODEL_PATH.exists():
+        return UltralyticsYOLO(str(SEVERITY_MODEL_PATH))
+
+    try:
+        from huggingface_hub import hf_hub_download
+        local = hf_hub_download(SEVERITY_MODEL_HF_REPO, SEVERITY_MODEL_HF_FILE)
+        import shutil
+        shutil.copy2(local, SEVERITY_MODEL_PATH)
+        return UltralyticsYOLO(str(SEVERITY_MODEL_PATH))
+    except Exception as exc:
+        print(f"⚠ Severity model unavailable ({exc}); falling back to heuristic")
+        return None
+
+
+def _classify_severity(
+    severity_model: UltralyticsYOLO,
+    pil_image: Image.Image,
+    damage_bbox: list[int],
+    overlap: float,
+    damage_area: int,
+    part_area: int,
+    min_crop_px: int = 32,
+) -> str:
+    """
+    Crop the damage region from *pil_image* and run the severity classifier.
+    Falls back to _severity_proxy if the crop is too small or inference fails.
+    """
+    x1, y1, x2, y2 = damage_bbox
+    w, h = x2 - x1, y2 - y1
+    if w < min_crop_px or h < min_crop_px:
+        return _severity_proxy(overlap, damage_area, part_area)
+
+    try:
+        crop = pil_image.crop((x1, y1, x2, y2))
+        results = severity_model(crop, verbose=False)
+        probs = results[0].probs
+        predicted_idx = int(probs.top1)
+        return _SEVERITY_CLASS_MAP.get(predicted_idx, "moderate")
+    except Exception:
+        return _severity_proxy(overlap, damage_area, part_area)
+
+
 def infer(
     image_path: str,
     parts_model: torch.nn.Module = None,
     yolo_damage_model: UltralyticsYOLO = None,
     device: torch.device = None,
     damage_model: torch.nn.Module = None,  # unused, kept for backwards compat
+    severity_model: UltralyticsYOLO = None,
 ) -> dict:
     """
     Full pipeline for a single image:
       1. Preprocess (orientation, quality gate)
       2. Run parts model
       3. Run damage model
-      4. Compute part-damage overlaps
+      4. Compute part-damage overlaps  (severity via ML classifier or heuristic)
       5. Return structured JSON-serialisable dict
 
     models can be passed in for batch use (avoids reloading weights each call).
@@ -167,6 +219,9 @@ def infer(
         parts_model = _load_model("parts", device)
     if yolo_damage_model is None:
         yolo_damage_model = _load_yolo_damage_model()
+    if severity_model is None:
+        severity_model = _load_severity_model()
+    use_ml_severity = severity_model is not None
 
     # ── 1. Preprocess ──────────────────────────────────────────────────────
     t_start   = time.perf_counter()
@@ -198,7 +253,13 @@ def infer(
                         "damage_types":     [],
                     }
                 entry = damaged_part_map[pname]
-                severity = _severity_proxy(ov, dmg["mask_area"], part["mask_area"])
+                if use_ml_severity:
+                    severity = _classify_severity(
+                        severity_model, pre.image, dmg["bbox"],
+                        ov, dmg["mask_area"], part["mask_area"],
+                    )
+                else:
+                    severity = _severity_proxy(ov, dmg["mask_area"], part["mask_area"])
                 entry["damage_types"].append({
                     "type":              dmg["class_name"],
                     "confidence":        dmg["score"],
@@ -224,7 +285,13 @@ def infer(
                     "part_mask_area_px": best_part["mask_area"],
                     "damage_types":      [],
                 }
-            severity = _severity_proxy(ov, dmg["mask_area"], best_part["mask_area"])
+            if use_ml_severity:
+                severity = _classify_severity(
+                    severity_model, pre.image, dmg["bbox"],
+                    ov, dmg["mask_area"], best_part["mask_area"],
+                )
+            else:
+                severity = _severity_proxy(ov, dmg["mask_area"], best_part["mask_area"])
             damaged_part_map[pname]["damage_types"].append({
                 "type":           dmg["class_name"],
                 "confidence":     dmg["score"],

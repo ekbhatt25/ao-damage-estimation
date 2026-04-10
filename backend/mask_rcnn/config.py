@@ -20,6 +20,9 @@ MODELS_DIR.mkdir(exist_ok=True)
 PARTS_MODEL_PATH       = MODELS_DIR / "parts_model.pth"
 DAMAGE_MODEL_PATH      = MODELS_DIR / "damage_model.pth"
 YOLO_DAMAGE_MODEL_PATH = MODELS_DIR / "best_car_damage_yolo.pt"
+SEVERITY_MODEL_PATH    = MODELS_DIR / "severity_yolov8_cls.pt"
+SEVERITY_MODEL_HF_REPO = "nezahatkorkmaz/car-damage-level-detection-yolov8"
+SEVERITY_MODEL_HF_FILE = "car-damage.pt"
 
 # ── Classes ────────────────────────────────────────────────────────────────
 # Index 0 is always background for Mask R-CNN
