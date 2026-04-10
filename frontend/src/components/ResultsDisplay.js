@@ -19,7 +19,6 @@ const ResultsDisplay = ({ results, onReset }) => {
         stp_eligible,
         stp_reasoning,
         confidence_score,
-        requires_adjuster_review,
         total_loss,
         explanation,
         cost,
