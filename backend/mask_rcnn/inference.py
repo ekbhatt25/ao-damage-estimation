@@ -226,14 +226,22 @@ def infer(
     t_start   = time.perf_counter()
     pre       = preprocess_image(image_path)
     image_t   = TF.to_tensor(pre.image)   # [3, H, W] float32
-
     preprocess_ms = (time.perf_counter() - t_start) * 1000
+    print(f"[TIMING] preprocess:    {preprocess_ms:.0f}ms  size={pre.image.size}")
 
-    # ── 2 & 3. Model inference ─────────────────────────────────────────────
-    t_inf   = time.perf_counter()
+    # ── 2. Mask R-CNN parts ────────────────────────────────────────────────
+    t_parts = time.perf_counter()
     parts   = _run_model(parts_model, image_t, device, PART_CLASSES)
+    parts_ms = (time.perf_counter() - t_parts) * 1000
+    print(f"[TIMING] mask_rcnn:     {parts_ms:.0f}ms  parts_found={len(parts)}")
+
+    # ── 3. YOLO damage ────────────────────────────────────────────────────
+    t_yolo  = time.perf_counter()
     damages = _run_yolo_damage_model(yolo_damage_model, image_path, SCORE_THRESHOLD)
-    infer_ms = (time.perf_counter() - t_inf) * 1000
+    yolo_ms = (time.perf_counter() - t_yolo) * 1000
+    print(f"[TIMING] yolo_damage:   {yolo_ms:.0f}ms  damages_found={len(damages)}")
+
+    infer_ms = parts_ms + yolo_ms
 
     # ── 4. Cross-reference: which parts are damaged? ───────────────────────
     damaged_part_map: dict[str, dict] = {}  # part_name → summary
@@ -307,6 +315,9 @@ def infer(
                 "damage_area_px": dmg["mask_area"],
                 "severity_proxy": severity,
             })
+
+    total_ms = (time.perf_counter() - t_start) * 1000
+    print(f"[TIMING] total_pipeline:{total_ms:.0f}ms  damaged_parts={len(damaged_part_map)}")
 
     # ── 5. Build output dict ───────────────────────────────────────────────
     w, h = pre.image.size

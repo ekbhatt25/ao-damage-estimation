@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp } from 'lucide-react';
 
 const severityDots = (severity) => {
     const level = { minor: 1, moderate: 2, severe: 3 }[severity?.toLowerCase()] ?? 0;
@@ -12,7 +12,19 @@ const severityDots = (severity) => {
 const ResultsDisplay = ({ results, onReset }) => {
     if (!results) return null;
 
-    const { detections = [], summary = {}, error } = results;
+    const {
+        detections = [],
+        summary = {},
+        error,
+        stp_eligible,
+        stp_reasoning,
+        confidence_score,
+        requires_adjuster_review,
+        total_loss,
+        explanation,
+        cost,
+        claim_id,
+    } = results;
 
     return (
         <motion.div
@@ -20,6 +32,7 @@ const ResultsDisplay = ({ results, onReset }) => {
             animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-2xl mx-auto bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl overflow-hidden shadow-2xl"
         >
+            {/* Header */}
             <div className="p-8 border-b border-gray-700 bg-gradient-to-r from-blue-900/20 to-purple-900/20">
                 <div className="flex items-center gap-3 mb-2">
                     {error
@@ -36,7 +49,65 @@ const ResultsDisplay = ({ results, onReset }) => {
                 }
             </div>
 
-            <div className="p-8 space-y-4">
+            <div className="p-8 space-y-6">
+
+                {/* STP Decision Banner */}
+                {stp_eligible != null && (
+                    <div className={`p-4 rounded-xl border flex items-start gap-3 ${
+                        total_loss
+                            ? 'bg-red-900/30 border-red-700'
+                            : stp_eligible
+                                ? 'bg-green-900/30 border-green-700'
+                                : 'bg-yellow-900/30 border-yellow-700'
+                    }`}>
+                        {total_loss
+                            ? <TrendingUp className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                            : stp_eligible
+                                ? <ShieldCheck className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                                : <ShieldAlert className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                        }
+                        <div>
+                            <p className={`font-bold text-sm ${total_loss ? 'text-red-400' : stp_eligible ? 'text-green-400' : 'text-yellow-400'}`}>
+                                {total_loss ? 'Total Loss' : stp_eligible ? 'Auto-Approved' : 'Adjuster Review Required'}
+                            </p>
+                            {stp_reasoning && (
+                                <p className="text-gray-300 text-xs mt-1">{stp_reasoning}</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Cost + Confidence row */}
+                {(cost || confidence_score != null) && (
+                    <div className="grid grid-cols-2 gap-4">
+                        {cost?.total_cost_range && (
+                            <div className="p-4 bg-gray-900/50 rounded-xl border border-gray-700">
+                                <label className="text-xs font-medium text-gray-400">Estimated Repair Cost</label>
+                                <p className="text-white font-bold text-lg mt-1">
+                                    ${cost.total_cost_range[0].toLocaleString()} – ${cost.total_cost_range[1].toLocaleString()}
+                                </p>
+                            </div>
+                        )}
+                        {confidence_score != null && (
+                            <div className="p-4 bg-gray-900/50 rounded-xl border border-gray-700">
+                                <label className="text-xs font-medium text-gray-400">Claim Confidence</label>
+                                <p className="text-white font-bold text-lg mt-1">
+                                    {(confidence_score * 100).toFixed(0)}%
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* LLM Explanation */}
+                {explanation && (
+                    <div className="p-4 bg-gray-900/50 rounded-xl border border-gray-700">
+                        <label className="text-xs font-medium text-gray-400 block mb-2">AI Assessment</label>
+                        <p className="text-gray-300 text-sm leading-relaxed">{explanation}</p>
+                    </div>
+                )}
+
+                {/* Detections */}
                 {detections.length === 0 && !error && (
                     <p className="text-gray-400 text-center py-4">No damage detected in this image.</p>
                 )}
@@ -66,10 +137,25 @@ const ResultsDisplay = ({ results, onReset }) => {
                                 <p className="text-white">{det.confidence != null ? `${(det.confidence * 100).toFixed(0)}%` : '—'}</p>
                             </div>
                         </div>
+                        {/* Per-part cost */}
+                        {cost?.damaged_parts?.[i]?.cost_range && (
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-gray-400">Part Cost Range</label>
+                                <p className="text-white text-sm">
+                                    ${cost.damaged_parts[i].cost_range[0].toLocaleString()} – ${cost.damaged_parts[i].cost_range[1].toLocaleString()}
+                                    <span className="text-gray-400 ml-2">({cost.damaged_parts[i].action})</span>
+                                </p>
+                            </div>
+                        )}
                     </div>
                 ))}
 
-                <div className="pt-4 border-t border-gray-700">
+                {/* Claim ID */}
+                {claim_id && (
+                    <p className="text-gray-600 text-xs text-center">Claim ID: {claim_id}</p>
+                )}
+
+                <div className="pt-2 border-t border-gray-700">
                     <button
                         onClick={onReset}
                         className="w-full py-4 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
