@@ -23,6 +23,8 @@ COPY backend/ ./backend/
 COPY download_models.py ./download_models.py
 
 # Download model weights from HF Hub at build time
+# Increment CACHE_BUST to force re-download of models
+ARG CACHE_BUST=2
 RUN python download_models.py
 
 # HF Spaces requires port 7860
