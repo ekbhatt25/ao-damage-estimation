@@ -21,7 +21,7 @@ This project automates vehicle damage assessment for Auto-Owners Insurance using
 | **YOLOv8m** | Object detection for damage type classification (6 classes, mAP@50 = 0.751) |
 | **YOLOv8n-cls** | Image classification for damage severity (minor / moderate / severe) |
 | **GradientBoosting Regressor** | ML cost estimation — predicts repair cost from part, damage type, and severity |
-| **Gemini 1.5 Flash** | LLM for natural language damage explanation and STP reasoning |
+| **Gemini Flash** | LLM for natural language damage explanation and STP reasoning (rule-based fallback if API key unavailable) |
 
 Mask R-CNN was fine-tuned using two-phase transfer learning (frozen backbone → full fine-tuning) with AMP and gradient checkpointing. YOLOv8m was fine-tuned on a labeled vehicle damage dataset. The severity classifier is sourced from `nezahatkorkmaz/car-damage-level-detection-yolov8`. The cost model is trained on repair cost estimates cross-referenced against SCRS/ASA labor rate surveys.
 
@@ -53,8 +53,8 @@ Cost Estimation (GradientBoosting ML model)
     └── Total loss flag (repair cost > 70% of estimated ACV)
     │
     ▼
-Gemini 1.5 Flash — natural language explanation + STP eligibility decision
-    ├── STP criteria: cost < $1,500, confidence > 80%, no major damage, not a total loss
+Gemini Flash — natural language explanation + STP eligibility decision
+    ├── STP criteria: cost < $1,500, confidence > 70%, not a total loss
     └── Auto-escalation to adjuster if confidence < 60% or total loss
     │
     ▼
@@ -195,9 +195,9 @@ Upload a vehicle photo and receive structured damage detections, cost estimates,
     "total_loss": false
   },
   "explanation": "Your vehicle sustained a moderate dent to the front bumper...",
-  "confidence_score": 0.73,
+  "confidence_score": 0.81,
   "stp_eligible": true,
-  "stp_reasoning": "Claim eligible for auto-approval: cost $439 under $1,500 threshold...",
+  "stp_reasoning": "Claim eligible for auto-approval: cost $439 under $1,500 threshold, 81% confidence meets requirement, not a total loss.",
   "requires_adjuster_review": false,
   "override_allowed": true,
   "model_version": "1.0.0",
@@ -217,7 +217,7 @@ Returns model load status and LLM availability.
 **Backend:** FastAPI, Uvicorn  
 **Computer Vision:** PyTorch, Mask R-CNN (ResNet-50-FPN), YOLOv8m, YOLOv8n-cls (Ultralytics), OpenCV, NumPy, Pillow, torchvision, pycocotools  
 **Cost Estimation:** scikit-learn (GradientBoostingRegressor), joblib  
-**LLM:** Gemini 1.5 Flash, Google Generative AI SDK  
+**LLM:** Gemini Flash, Google Generative AI SDK  
 **Deployment:** Docker, Hugging Face Spaces, Vercel, Hugging Face Hub
 
 ## License

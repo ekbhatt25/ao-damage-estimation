@@ -68,41 +68,35 @@ class LLMClient:
         return output
     
     def _calculate_confidence(self, cv_output, cost_output):
-        """Confidence scoring"""
-        
-        # Average CV confidence across all detected parts
+        """
+        Confidence = average Mask R-CNN part confidence across all detections.
+        Measures how certain the CV pipeline is about *what it detected*, not how
+        bad the damage is. Damage-type (YOLO) confidence is excluded because YOLO
+        is trained on a harder task and consistently scores lower — folding it in
+        would penalise confidence even when the detection is good.
+        """
         cv_confidences = [d.get('confidence', 0.5) for d in cv_output['damaged_parts']]
         avg_cv = sum(cv_confidences) / len(cv_confidences) if cv_confidences else 0.5
-        
-        # Cost certainty
-        cost_range = cost_output['total_cost_range']
-        if cost_range[1] > 0:
-            range_ratio = (cost_range[1] - cost_range[0]) / cost_range[1]
-            cost_certainty = 1.0 - min(range_ratio, 1.0)
-        else:
-            cost_certainty = 0.5
-        
-        # Combined
-        combined = (avg_cv * 0.7) + (cost_certainty * 0.3)
-        
-        return round(combined, 2)
+        return round(avg_cv, 2)
     
     def _decide_stp(self, total_cost, confidence, severity_levels, total_loss=False):
         """STP recommendation"""
 
-        cost_ok       = total_cost < 1500
-        confidence_ok = confidence > 0.70
-        severity_ok   = 'major' not in severity_levels
+        cost_ok        = total_cost < 1500
+        confidence_ok  = confidence > 0.70
         not_total_loss = not total_loss
 
-        stp_eligible = cost_ok and confidence_ok and severity_ok and not_total_loss
+        # Severity is intentionally excluded: the cost gate already bounds financial
+        # risk, and the total_loss flag catches catastrophic cases. Blocking on
+        # severity alone would reject a $400 severe scratch — that's not useful.
+        stp_eligible = cost_ok and confidence_ok and not_total_loss
 
         if stp_eligible:
             reasoning = (
                 f"Claim eligible for auto-approval: "
                 f"cost ${total_cost:.0f} under $1,500 threshold, "
                 f"{confidence:.0%} confidence meets requirement, "
-                f"no major damage detected, not a total loss."
+                f"not a total loss."
             )
         else:
             reasons = []
@@ -111,9 +105,7 @@ class LLMClient:
             if not cost_ok:
                 reasons.append(f"cost ${total_cost:.0f} exceeds $1,500")
             if not confidence_ok:
-                reasons.append(f"{confidence:.0%} confidence below 80%")
-            if not severity_ok:
-                reasons.append("major damage requires review")
+                reasons.append(f"{confidence:.0%} confidence below 70%")
 
             reasoning = f"Manual adjuster review required: {', '.join(reasons)}."
 

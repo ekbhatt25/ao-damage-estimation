@@ -54,24 +54,22 @@ def _rule_based_stp(cost_output: dict, detections: list) -> dict:
     severities = [d.get("severity", "minor") for d in detections]
     total_loss = cost_output.get("total_loss", False)
 
-    cost_ok       = total_cost < 1500
-    confidence_ok = confidence > 0.70
-    severity_ok   = "major" not in severities and "severe" not in severities
+    cost_ok        = total_cost < 1500
+    confidence_ok  = confidence > 0.70
     not_total_loss = not total_loss
 
-    stp_eligible = cost_ok and confidence_ok and severity_ok and not_total_loss
+    stp_eligible = cost_ok and confidence_ok and not_total_loss
 
     if stp_eligible:
         reasoning = (
             f"Claim eligible for auto-approval: cost ${total_cost:.0f} under $1,500, "
-            f"{confidence:.0%} confidence, no major damage, not a total loss."
+            f"{confidence:.0%} confidence, not a total loss."
         )
     else:
         reasons = []
         if total_loss: reasons.append("total loss")
         if not cost_ok: reasons.append(f"cost ${total_cost:.0f} exceeds $1,500")
-        if not confidence_ok: reasons.append(f"{confidence:.0%} confidence below 80%")
-        if not severity_ok: reasons.append("major/severe damage present")
+        if not confidence_ok: reasons.append(f"{confidence:.0%} confidence below 70%")
         reasoning = f"Manual review required: {', '.join(reasons)}."
 
     requires_review = not stp_eligible or confidence < 0.60 or total_loss

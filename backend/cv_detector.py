@@ -72,7 +72,7 @@ class CVDetector:
                     detections.append({
                         "part":              part_entry["part"],
                         "damage_type":       damage_type,
-                        "confidence":        round(part_entry["part_confidence"] * 0.7 + dmg["confidence"] * 0.3, 4),
+                        "confidence":        round(part_entry["part_confidence"], 4),
                         "bbox":              dmg["damage_bbox"],
                         "part_confidence":   part_entry["part_confidence"],
                         "damage_confidence": dmg["confidence"],
