@@ -118,7 +118,7 @@ async def detect(
 
         # ── 1. CV detection ───────────────────────────────────────────────────
         t_cv = time.perf_counter()
-        detections = cv_detector.detect(str(temp_path))
+        detections, fraud_flags = cv_detector.detect(str(temp_path))
         cv_ms = round((time.perf_counter() - t_cv) * 1000, 1)
         print(f"[TIMING] cv_total:      {cv_ms}ms  detections={len(detections)}", flush=True)
         inference_ms = cv_ms
@@ -164,7 +164,7 @@ async def detect(
             "total_loss":              llm_output.get("total_loss", False),
             "override_allowed":        True,
             "model_version":           "1.0.0",
-            "fraud_flags":             [],
+            "fraud_flags":             fraud_flags,
             "inference_ms":            inference_ms,
             "claim_id":                claim_id,
             # Kept for backwards compatibility with ResultsDisplay

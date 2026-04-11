@@ -41,7 +41,7 @@ class CVDetector:
             print("⚠ Severity classifier unavailable — using heuristic fallback")
         self.has_parts_model = True
 
-    def detect(self, image_path: str, conf_threshold: float = DISPLAY_THRESHOLD) -> list[dict]:
+    def detect(self, image_path: str, conf_threshold: float = DISPLAY_THRESHOLD) -> tuple[list[dict], list[str]]:
         """
         Run the two-model Mask R-CNN pipeline on an image.
 
@@ -58,6 +58,8 @@ class CVDetector:
             device=self.device,
             severity_model=self.severity_model,
         )
+
+        fraud_flags = result.get("quality_check", {}).get("fraud_flags", [])
 
         seen = set()
         detections = []
@@ -80,4 +82,4 @@ class CVDetector:
                         "severity":          dmg["severity_proxy"],
                     })
 
-        return detections
+        return detections, fraud_flags
