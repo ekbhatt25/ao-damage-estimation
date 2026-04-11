@@ -44,7 +44,7 @@ class LLMClient:
         # Auto-escalation: force manual review if confidence too low
         requires_review = (
             not stp_decision['stp_eligible'] or
-            confidence < 0.60 or
+            confidence < 0.40 or
             cost_output.get('total_loss', False)
         )
 
@@ -69,21 +69,19 @@ class LLMClient:
     
     def _calculate_confidence(self, cv_output, cost_output):
         """
-        Confidence = average Mask R-CNN part confidence across all detections.
-        Measures how certain the CV pipeline is about *what it detected*, not how
-        bad the damage is. Damage-type (YOLO) confidence is excluded because YOLO
-        is trained on a harder task and consistently scores lower — folding it in
-        would penalise confidence even when the detection is good.
+        Confidence = max Mask R-CNN part confidence across all detections.
+        Uses max rather than mean because the strongest single detection is the
+        most meaningful signal — averaging across many weak detections penalises
+        images with multiple marginal detections even when at least one is solid.
         """
         cv_confidences = [d.get('confidence', 0.5) for d in cv_output['damaged_parts']]
-        avg_cv = sum(cv_confidences) / len(cv_confidences) if cv_confidences else 0.5
-        return round(avg_cv, 2)
+        return round(max(cv_confidences) if cv_confidences else 0.5, 2)
     
     def _decide_stp(self, total_cost, confidence, severity_levels, total_loss=False):
         """STP recommendation"""
 
         cost_ok        = total_cost < 1500
-        confidence_ok  = confidence > 0.70
+        confidence_ok  = confidence > 0.60
         not_total_loss = not total_loss
 
         # Severity is intentionally excluded: the cost gate already bounds financial
@@ -105,7 +103,7 @@ class LLMClient:
             if not cost_ok:
                 reasons.append(f"cost ${total_cost:.0f} exceeds $1,500")
             if not confidence_ok:
-                reasons.append(f"{confidence:.0%} confidence below 70%")
+                reasons.append(f"{confidence:.0%} confidence below 60%")
 
             reasoning = f"Manual adjuster review required: {', '.join(reasons)}."
 

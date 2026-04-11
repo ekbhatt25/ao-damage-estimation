@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp } from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle } from 'lucide-react';
 
 const severityDots = (severity) => {
     const level = { minor: 1, moderate: 2, severe: 3 }[severity?.toLowerCase()] ?? 0;
@@ -23,6 +23,7 @@ const ResultsDisplay = ({ results, onReset }) => {
         explanation,
         cost,
         claim_id,
+        fraud_flags = [],
     } = results;
 
     return (
@@ -49,6 +50,27 @@ const ResultsDisplay = ({ results, onReset }) => {
             </div>
 
             <div className="p-8 space-y-6">
+
+                {/* Fraud Flags */}
+                {fraud_flags.length > 0 && (
+                    <div className="p-4 rounded-xl border bg-orange-900/30 border-orange-700">
+                        <div className="flex items-center gap-2 mb-2">
+                            <AlertTriangle className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                            <p className="text-orange-400 font-bold text-sm">Image Fraud Signals Detected</p>
+                        </div>
+                        <ul className="space-y-1">
+                            {fraud_flags.map((flag, i) => {
+                                const [name, detail] = flag.split(' (');
+                                return (
+                                    <li key={i} className="text-xs text-gray-300">
+                                        <span className="text-orange-300 font-medium">{name.replace(/_/g, ' ')}</span>
+                                        {detail && <span className="text-gray-400"> — {detail.replace(')', '')}</span>}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </div>
+                )}
 
                 {/* STP Decision Banner */}
                 {stp_eligible != null && (
