@@ -36,13 +36,19 @@ Preprocessing
     ├── Orientation correction (EXIF)
     ├── Quality gate (blur, brightness, resolution)
     └── Fraud signals — flagged in API response and audit log
-            ├── low_pixel_variance: nearly uniform image — suggests a screenshot or
-            │   downloaded photo rather than a live photo of the claimant's car
+            ├── low_pixel_variance: nearly uniform image — suggests a solid fill
+            │   or digitally generated image rather than a real damage photo
             ├── unusually_sharp: sharpness anomalously high for a damage photo —
-            │   suggests a stock image or professionally shot photo being submitted
+            │   suggests a stock or professionally shot photo being submitted
             │   to exaggerate or fabricate damage
-            └── exact_aspect_ratio: dimensions match a perfect standard ratio —
-                common in edited, cropped, or AI-generated images
+            ├── exact_aspect_ratio: dimensions match a perfect standard ratio —
+            │   common in edited or AI-generated images
+            ├── editing_software_detected: EXIF Software tag contains Photoshop,
+            │   GIMP, Lightroom, etc. — image was manipulated after capture
+            ├── no_camera_info: EXIF present but no device make/model —
+            │   common in screenshots processed through a crop or edit tool
+            └── duplicate_image: perceptual hash matches a previously submitted
+                photo — same damage being claimed more than once
     │
     ├──▶ Mask R-CNN (parts) ──▶ Part detections (class, bbox, mask, score)
     │

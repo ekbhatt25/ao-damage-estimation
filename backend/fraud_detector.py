@@ -86,10 +86,6 @@ def check_metadata(image_path: str) -> list[str]:
                 exif_dict = None
 
         if not exif_dict:
-            flags.append(
-                "no_exif_metadata (possible screenshot or downloaded image — "
-                "real damage photos contain camera metadata)"
-            )
             return flags
 
         # Tag 305 = Software
