@@ -132,9 +132,11 @@ async def detect(
             dup_flag = check_duplicate(pil_image)
             if dup_flag:
                 fraud_flags.append(dup_flag)
-            fraud_flags.extend(check_metadata(str(temp_path)))
+            meta_flags = check_metadata(str(temp_path))
+            fraud_flags.extend(meta_flags)
+            print(f"[FRAUD] flags={fraud_flags}", flush=True)
         except Exception as e:
-            print(f"Fraud detection warning: {e}")
+            print(f"[FRAUD] error: {e}", flush=True)
 
         # ── 2. Cost estimation ────────────────────────────────────────────────
         t_cost = time.perf_counter()
