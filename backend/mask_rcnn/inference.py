@@ -250,6 +250,8 @@ def infer(
 
     # ── 4. Cross-reference: which parts are damaged? ───────────────────────
     damaged_part_map: dict[str, dict] = {}  # part_name → summary
+    severity_ms_total = 0.0
+    severity_calls = 0
 
     for part in parts:
         for dmg in damages:
@@ -266,6 +268,7 @@ def infer(
                     }
                 entry = damaged_part_map[pname]
                 if use_ml_severity:
+                    t_sev = time.perf_counter()
                     severity = _classify_severity(
                         severity_model,
                         pre.image,
@@ -274,6 +277,8 @@ def infer(
                         dmg["mask_area"],
                         part["mask_area"],
                     )
+                    severity_ms_total += (time.perf_counter() - t_sev) * 1000
+                    severity_calls += 1
                 else:
                     severity = _severity_proxy(ov, dmg["mask_area"], part["mask_area"])
                 entry["damage_types"].append({
@@ -302,6 +307,7 @@ def infer(
                     "damage_types":      [],
                 }
             if use_ml_severity:
+                t_sev = time.perf_counter()
                 severity = _classify_severity(
                     severity_model,
                     pre.image,
@@ -310,6 +316,8 @@ def infer(
                     dmg["mask_area"],
                     best_part["mask_area"],
                 )
+                severity_ms_total += (time.perf_counter() - t_sev) * 1000
+                severity_calls += 1
             else:
                 severity = _severity_proxy(ov, dmg["mask_area"], best_part["mask_area"])
             damaged_part_map[pname]["damage_types"].append({
@@ -322,6 +330,7 @@ def infer(
             })
 
     total_ms = (time.perf_counter() - t_start) * 1000
+    print(f"[TIMING] severity_cls:  {severity_ms_total:.0f}ms  calls={severity_calls}", flush=True)
     print(f"[TIMING] total_pipeline:{total_ms:.0f}ms  damaged_parts={len(damaged_part_map)}", flush=True)
 
     # ── 5. Build output dict ───────────────────────────────────────────────
