@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle } from 'lucide-react';
+import ImageOverlay from './ImageOverlay';
 
 const severityDots = (severity) => {
     const level = { minor: 1, moderate: 2, severe: 3 }[severity?.toLowerCase()] ?? 0;
@@ -9,7 +10,7 @@ const severityDots = (severity) => {
     ));
 };
 
-const ResultsDisplay = ({ results, onReset }) => {
+const ResultsDisplay = ({ results, imageUrl, onReset }) => {
     if (!results) return null;
 
     const {
@@ -126,6 +127,11 @@ const ResultsDisplay = ({ results, onReset }) => {
                         <label className="text-xs font-medium text-gray-400 block mb-2">AI Assessment</label>
                         <p className="text-gray-300 text-sm leading-relaxed">{explanation}</p>
                     </div>
+                )}
+
+                {/* Image with bounding box overlay */}
+                {imageUrl && detections.length > 0 && (
+                    <ImageOverlay imageUrl={imageUrl} detections={detections} />
                 )}
 
                 {/* Detections */}
