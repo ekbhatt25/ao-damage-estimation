@@ -64,7 +64,7 @@ const ResultsDisplay = ({ results, onReset }) => {
                                 return (
                                     <li key={i} className="text-xs text-gray-300">
                                         <span className="text-orange-300 font-medium">{name.replace(/_/g, ' ')}</span>
-                                        {detail && <span className="text-gray-400"> — {detail.replace(')', '')}</span>}
+                                        {detail && <span className="text-gray-200"> — {detail.replace(')', '')}</span>}
                                     </li>
                                 );
                             })}
