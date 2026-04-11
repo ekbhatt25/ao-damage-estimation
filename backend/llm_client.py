@@ -70,9 +70,9 @@ class LLMClient:
     def _calculate_confidence(self, cv_output, cost_output):
         """Confidence scoring"""
         
-        # Average CV confidence
+        # Minimum CV confidence — if any part is uncertain, the claim is uncertain
         cv_confidences = [d.get('confidence', 0.5) for d in cv_output['damaged_parts']]
-        avg_cv = sum(cv_confidences) / len(cv_confidences) if cv_confidences else 0.5
+        avg_cv = min(cv_confidences) if cv_confidences else 0.5
         
         # Cost certainty
         cost_range = cost_output['total_cost_range']
@@ -91,7 +91,7 @@ class LLMClient:
         """STP recommendation"""
 
         cost_ok       = total_cost < 1500
-        confidence_ok = confidence > 0.80
+        confidence_ok = confidence > 0.70
         severity_ok   = 'major' not in severity_levels
         not_total_loss = not total_loss
 

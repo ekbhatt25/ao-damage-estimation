@@ -50,12 +50,12 @@ def _rule_based_stp(cost_output: dict, detections: list) -> dict:
     """Fallback STP logic when Gemini is unavailable."""
     total_cost = sum(cost_output["total_cost_range"]) / 2
     confidences = [d.get("confidence", 0.5) for d in detections]
-    confidence = sum(confidences) / len(confidences) if confidences else 0.5
+    confidence = min(confidences) if confidences else 0.5
     severities = [d.get("severity", "minor") for d in detections]
     total_loss = cost_output.get("total_loss", False)
 
     cost_ok       = total_cost < 1500
-    confidence_ok = confidence > 0.80
+    confidence_ok = confidence > 0.70
     severity_ok   = "major" not in severities and "severe" not in severities
     not_total_loss = not total_loss
 
