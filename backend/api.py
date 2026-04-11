@@ -10,9 +10,12 @@ from pathlib import Path
 import shutil
 import time
 
+from PIL import Image as PILImage
+
 from cv_detector import CVDetector
 from cost_estimator import CostEstimator
 from audit_logger import log_claim
+from fraud_detector import check_duplicate, check_metadata
 
 app = FastAPI(title="Auto-Owners AI Claims API")
 
@@ -122,6 +125,16 @@ async def detect(
         cv_ms = round((time.perf_counter() - t_cv) * 1000, 1)
         print(f"[TIMING] cv_total:      {cv_ms}ms  detections={len(detections)}", flush=True)
         inference_ms = cv_ms
+
+        # ── 1b. Additional fraud signals (metadata + duplicate) ───────────────
+        try:
+            pil_image = PILImage.open(temp_path)
+            dup_flag = check_duplicate(pil_image)
+            if dup_flag:
+                fraud_flags.append(dup_flag)
+            fraud_flags.extend(check_metadata(str(temp_path)))
+        except Exception as e:
+            print(f"Fraud detection warning: {e}")
 
         # ── 2. Cost estimation ────────────────────────────────────────────────
         t_cost = time.perf_counter()
