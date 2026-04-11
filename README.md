@@ -11,7 +11,7 @@ pinned: false
 
 ## Description
 
-This project automates vehicle damage assessment for Auto-Owners Insurance using a multi-model computer vision, machine learning, and generative AI pipeline. A user uploads a photo of a damaged vehicle and the system identifies which parts are damaged, classifies the damage type and severity, estimates repair costs, and produces a straight-through processing (STP) eligibility decision. The pipeline returns part-level detections with confidence scores, bounding boxes, segmentation masks, severity ratings, per-part cost ranges, and a natural language explanation.
+This project automates vehicle damage assessment for Auto-Owners Insurance using a multi-model computer vision, machine learning, and generative AI pipeline. A user uploads a photo of a damaged vehicle and the system identifies which parts are damaged, classifies the damage type and severity, estimates repair costs, and produces a straight-through processing (STP) eligibility decision. The frontend renders the uploaded image with color-coded bounding box overlays (yellow = minor, orange = moderate, red = severe) alongside part-level detections with confidence scores, severity ratings, per-part cost ranges, a natural language explanation, and fraud signal flags.
 
 ## Models
 
@@ -128,7 +128,11 @@ Backend — **Hugging Face Spaces** (Docker): `https://eerabhatt-ao-damage-estim
 
 Frontend — **Vercel**: `https://ao-damage-estimation.vercel.app`
 
-Both auto-redeploy on every push to `main`.
+Frontend auto-redeploys on every push to `main`. Backend requires a separate push to the HF Spaces git remote:
+
+```bash
+git push space main
+```
 
 ## Project Structure
 
@@ -140,6 +144,7 @@ ao-damage-estimation/
 │   ├── cost_estimator.py   # ML cost estimation (GradientBoosting) with labor rate adjustment
 │   ├── llm_client.py       # Gemini integration: explanation generation + STP decision
 │   ├── audit_logger.py     # JSONL audit trail — one record per claim
+│   ├── fraud_detector.py   # Perceptual hash duplicate detection + EXIF metadata anomaly detection
 │   ├── data/
 │   │   ├── repair_costs.csv    # Part repair/replace costs
 │   │   └── labor_rates.csv     # Body/mechanical/paint rates by state
@@ -152,7 +157,12 @@ ao-damage-estimation/
 │       ├── evaluate.py     # COCO mAP evaluation
 │       └── preprocess.py   # Image quality gating, orientation correction, fraud signals
 ├── frontend/
-│   └── src/                # React SPA
+│   └── src/
+│       └── components/
+│           ├── ImageOverlay.js     # HTML5 Canvas bbox overlay, color-coded by severity
+│           ├── ResultsDisplay.js   # Full results panel — STP, cost, explanation, detections
+│           ├── ImageUpload.js      # Drag-and-drop image uploader
+│           └── LoadingOverlay.js   # Analysis loading state with cancel button
 ├── download_models.py      # Downloads model weights from HF Hub at build time
 ├── models/                 # Model weights (not in git — hosted on HF Hub)
 ├── audit_log.jsonl         # Append-only claim audit log (not in git)
@@ -224,7 +234,7 @@ Returns model load status and LLM availability.
 
 ## Technologies Used
 
-**Frontend:** React, Tailwind CSS, Framer Motion  
+**Frontend:** React, Tailwind CSS, Framer Motion, HTML5 Canvas (bounding box overlay)  
 **Backend:** FastAPI, Uvicorn  
 **Computer Vision:** PyTorch, Mask R-CNN (ResNet-50-FPN), YOLOv8m, YOLOv8n-cls (Ultralytics), OpenCV, NumPy, Pillow, torchvision, pycocotools  
 **Cost Estimation:** scikit-learn (GradientBoostingRegressor), joblib  
