@@ -152,15 +152,20 @@ _SEVERITY_CLASS_MAP = {0: "minor", 1: "moderate", 2: "severe"}
 
 def _load_severity_model() -> UltralyticsYOLO | None:
     """Load the YOLOv8 severity classifier, downloading from HF if needed."""
+    t0 = time.perf_counter()
     if SEVERITY_MODEL_PATH.exists():
-        return UltralyticsYOLO(str(SEVERITY_MODEL_PATH))
+        model = UltralyticsYOLO(str(SEVERITY_MODEL_PATH))
+        print(f"[TIMING] severity_load: {(time.perf_counter()-t0)*1000:.0f}ms", flush=True)
+        return model
 
     try:
         from huggingface_hub import hf_hub_download
         local = hf_hub_download(SEVERITY_MODEL_HF_REPO, SEVERITY_MODEL_HF_FILE)
         import shutil
         shutil.copy2(local, SEVERITY_MODEL_PATH)
-        return UltralyticsYOLO(str(SEVERITY_MODEL_PATH))
+        model = UltralyticsYOLO(str(SEVERITY_MODEL_PATH))
+        print(f"[TIMING] severity_load: {(time.perf_counter()-t0)*1000:.0f}ms (downloaded)", flush=True)
+        return model
     except Exception as exc:
         print(f"⚠ Severity model unavailable ({exc}); falling back to heuristic")
         return None
