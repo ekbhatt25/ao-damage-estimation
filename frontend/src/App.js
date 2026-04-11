@@ -9,7 +9,7 @@ import aoTextLogo from './ao-text-logo.jpg';
 
 function App() {
   const [appState, setAppState] = useState('idle');
-  const [image, setImage] = useState(null); // eslint-disable-line no-unused-vars
+  const [image, setImage] = useState(null);
   const [results, setResults] = useState(null);
   const abortControllerRef = React.useRef(null);
 
@@ -98,7 +98,7 @@ function App() {
             )}
 
             {appState === 'complete' && (
-              <ResultsDisplay results={results} onReset={handleReset} />
+              <ResultsDisplay results={results} imageUrl={image} onReset={handleReset} />
             )}
           </AnimatePresence>
         </main>
