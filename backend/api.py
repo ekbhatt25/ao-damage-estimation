@@ -15,7 +15,14 @@ from PIL import Image as PILImage
 from cv_detector import CVDetector
 from cost_estimator import CostEstimator
 from audit_logger import log_claim
-from fraud_detector import check_duplicate, check_metadata
+
+try:
+    from fraud_detector import check_duplicate, check_metadata
+    _fraud_detection_available = True
+    print("✓ Fraud detector ready")
+except Exception as e:
+    print(f"⚠ Fraud detection unavailable: {e}")
+    _fraud_detection_available = False
 
 app = FastAPI(title="Auto-Owners AI Claims API")
 
@@ -127,16 +134,18 @@ async def detect(
         inference_ms = cv_ms
 
         # ── 1b. Additional fraud signals (metadata + duplicate) ───────────────
-        try:
-            pil_image = PILImage.open(temp_path)
-            dup_flag = check_duplicate(pil_image)
-            if dup_flag:
-                fraud_flags.append(dup_flag)
-            meta_flags = check_metadata(str(temp_path))
-            fraud_flags.extend(meta_flags)
-            print(f"[FRAUD] flags={fraud_flags}", flush=True)
-        except Exception as e:
-            print(f"[FRAUD] error: {e}", flush=True)
+        print(f"[FRAUD] available={_fraud_detection_available}", flush=True)
+        if _fraud_detection_available:
+            try:
+                pil_image = PILImage.open(temp_path)
+                dup_flag = check_duplicate(pil_image)
+                if dup_flag:
+                    fraud_flags.append(dup_flag)
+                meta_flags = check_metadata(str(temp_path))
+                fraud_flags.extend(meta_flags)
+                print(f"[FRAUD] flags={fraud_flags}", flush=True)
+            except Exception as e:
+                print(f"[FRAUD] error: {e}", flush=True)
 
         # ── 2. Cost estimation ────────────────────────────────────────────────
         t_cost = time.perf_counter()
