@@ -252,6 +252,7 @@ def infer(
     damaged_part_map: dict[str, dict] = {}  # part_name → summary
     severity_ms_total = 0.0
     severity_calls = 0
+    severity_cache: dict[tuple, str] = {}  # bbox → severity (avoid re-running per part)
 
     for part in parts:
         for dmg in damages:
@@ -268,17 +269,16 @@ def infer(
                     }
                 entry = damaged_part_map[pname]
                 if use_ml_severity:
-                    t_sev = time.perf_counter()
-                    severity = _classify_severity(
-                        severity_model,
-                        pre.image,
-                        dmg["bbox"],
-                        ov,
-                        dmg["mask_area"],
-                        part["mask_area"],
-                    )
-                    severity_ms_total += (time.perf_counter() - t_sev) * 1000
-                    severity_calls += 1
+                    bbox_key = tuple(dmg["bbox"])
+                    if bbox_key not in severity_cache:
+                        t_sev = time.perf_counter()
+                        severity_cache[bbox_key] = _classify_severity(
+                            severity_model, pre.image, dmg["bbox"],
+                            ov, dmg["mask_area"], part["mask_area"],
+                        )
+                        severity_ms_total += (time.perf_counter() - t_sev) * 1000
+                        severity_calls += 1
+                    severity = severity_cache[bbox_key]
                 else:
                     severity = _severity_proxy(ov, dmg["mask_area"], part["mask_area"])
                 entry["damage_types"].append({
@@ -307,17 +307,16 @@ def infer(
                     "damage_types":      [],
                 }
             if use_ml_severity:
-                t_sev = time.perf_counter()
-                severity = _classify_severity(
-                    severity_model,
-                    pre.image,
-                    dmg["bbox"],
-                    ov,
-                    dmg["mask_area"],
-                    best_part["mask_area"],
-                )
-                severity_ms_total += (time.perf_counter() - t_sev) * 1000
-                severity_calls += 1
+                bbox_key = tuple(dmg["bbox"])
+                if bbox_key not in severity_cache:
+                    t_sev = time.perf_counter()
+                    severity_cache[bbox_key] = _classify_severity(
+                        severity_model, pre.image, dmg["bbox"],
+                        ov, dmg["mask_area"], best_part["mask_area"],
+                    )
+                    severity_ms_total += (time.perf_counter() - t_sev) * 1000
+                    severity_calls += 1
+                severity = severity_cache[bbox_key]
             else:
                 severity = _severity_proxy(ov, dmg["mask_area"], best_part["mask_area"])
             damaged_part_map[pname]["damage_types"].append({
