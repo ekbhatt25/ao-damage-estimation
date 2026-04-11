@@ -9,6 +9,21 @@ Model weights are loaded from paths defined in mask_rcnn/config.py:
 from mask_rcnn.inference import infer, get_device, _load_model, _load_yolo_damage_model, _load_severity_model
 from mask_rcnn.config import DISPLAY_THRESHOLD
 
+# Parts where lamp/tire/glass damage types make sense
+_LAMP_PARTS    = {"Headlight", "Tail-light"}
+_TIRE_PARTS    = {"Front-wheel", "Back-wheel"}
+_GLASS_PARTS   = {"Windshield", "Back-windshield", "Front-window", "Back-window"}
+
+def _compatible(part: str, damage_type: str) -> bool:
+    """Filter out physically impossible part-damage combinations."""
+    if damage_type == "Lamp Broken" and part not in _LAMP_PARTS:
+        return False
+    if damage_type == "Tire Flat" and part not in _TIRE_PARTS:
+        return False
+    if damage_type == "Glass Shatter" and part not in _GLASS_PARTS:
+        return False
+    return True
+
 
 class CVDetector:
     def __init__(self):
@@ -48,14 +63,15 @@ class CVDetector:
         detections = []
         for part_entry in result.get("damaged_parts", []):
             for dmg in part_entry.get("damage_types", []):
-                if dmg["confidence"] >= conf_threshold:
-                    key = (part_entry["part"], dmg["type"].title())
+                damage_type = dmg["type"].title()
+                if dmg["confidence"] >= conf_threshold and _compatible(part_entry["part"], damage_type):
+                    key = (part_entry["part"], damage_type)
                     if key in seen:
                         continue
                     seen.add(key)
                     detections.append({
                         "part":              part_entry["part"],
-                        "damage_type":       dmg["type"].title(),
+                        "damage_type":       damage_type,
                         "confidence":        round(part_entry["part_confidence"] * 0.7 + dmg["confidence"] * 0.3, 4),
                         "bbox":              dmg["damage_bbox"],
                         "part_confidence":   part_entry["part_confidence"],
