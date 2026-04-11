@@ -35,7 +35,14 @@ Preprocessing
     ├── Resolution cap (800px max — CPU inference optimization)
     ├── Orientation correction (EXIF)
     ├── Quality gate (blur, brightness, resolution)
-    └── Fraud signals (pixel variance, sharpness anomaly, aspect ratio)
+    └── Fraud signals — flagged in API response and audit log
+            ├── low_pixel_variance: nearly uniform image — suggests a screenshot or
+            │   downloaded photo rather than a live photo of the claimant's car
+            ├── unusually_sharp: sharpness anomalously high for a damage photo —
+            │   suggests a stock image or professionally shot photo being submitted
+            │   to exaggerate or fabricate damage
+            └── exact_aspect_ratio: dimensions match a perfect standard ratio —
+                common in edited, cropped, or AI-generated images
     │
     ├──▶ Mask R-CNN (parts) ──▶ Part detections (class, bbox, mask, score)
     │
