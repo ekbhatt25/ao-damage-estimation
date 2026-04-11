@@ -45,8 +45,6 @@ Preprocessing
             │   common in edited or AI-generated images
             ├── editing_software_detected: EXIF Software tag contains Photoshop,
             │   GIMP, Lightroom, etc. — image was manipulated after capture
-            ├── no_camera_info: EXIF present but no device make/model —
-            │   common in screenshots processed through a crop or edit tool
             └── duplicate_image: perceptual hash matches a previously submitted
                 photo — same damage being claimed more than once
     │

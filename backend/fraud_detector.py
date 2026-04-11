@@ -93,14 +93,6 @@ def check_metadata(image_path: str) -> list[str]:
         if any(kw in software.lower() for kw in _EDITING_KEYWORDS):
             flags.append(f"editing_software_detected (image processed with {software})")
 
-        # Tags 271 = Make, 272 = Model
-        make = str(exif_dict.get(271, "")).strip()
-        model = str(exif_dict.get(272, "")).strip()
-        if not make and not model:
-            flags.append(
-                "no_camera_info (no device make/model — "
-                "common in edited or AI-generated images)"
-            )
 
     except Exception:
         pass
