@@ -18,14 +18,21 @@ const ImageOverlay = ({ imageUrl, detections = [] }) => {
         const canvas = canvasRef.current;
         if (!img || !canvas || !detections.length) return;
 
-        const scaleX = img.clientWidth  / img.naturalWidth;
-        const scaleY = img.clientHeight / img.naturalHeight;
+        const dpr    = window.devicePixelRatio || 1;
+        const cssW   = img.clientWidth;
+        const cssH   = img.clientHeight;
 
-        canvas.width  = img.clientWidth;
-        canvas.height = img.clientHeight;
+        canvas.width  = cssW * dpr;
+        canvas.height = cssH * dpr;
+        canvas.style.width  = `${cssW}px`;
+        canvas.style.height = `${cssH}px`;
+
+        const scaleX = cssW / img.naturalWidth;
+        const scaleY = cssH / img.naturalHeight;
 
         const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, cssW, cssH);
 
         detections.forEach((det) => {
             if (!det.bbox) return;
