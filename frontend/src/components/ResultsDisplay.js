@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X, RotateCcw, Info, History } from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X, RotateCcw, Info, History, Copy } from 'lucide-react';
 import ImageOverlay from './ImageOverlay';
 
 // ── Client-side cost lookup (mirrors backend cost_estimator.py) ───────────────
@@ -392,8 +392,8 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
                         Analyze Another Image
                     </button>
                     <button onClick={openHistory}
-                        className="w-full py-3 bg-transparent border border-gray-600 text-gray-300 rounded-xl font-medium hover:border-gray-400 hover:text-white transition-colors flex items-center justify-center gap-2">
-                        <History className="w-4 h-4" />
+                        className="w-full py-4 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
+                        <History className="w-5 h-5" />
                         View Claim History
                     </button>
                 </div>
@@ -412,9 +412,23 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
                             <History className="w-5 h-5 text-gray-400" />
                             <h3 className="text-white font-bold text-lg">Claim History</h3>
                         </div>
-                        <button onClick={() => setShowHistory(false)} className="text-gray-400 hover:text-white transition-colors">
-                            <X className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => {
+                                    const text = claimHistory.map(c =>
+                                        `${new Date(c.timestamp).toLocaleString()} | ${c.claim_id} | ${c.stp_eligible ? 'Auto-Approved' : c.total_loss ? 'Total Loss' : 'Adjuster Review'} | $${fmt(c.total_cost_range?.[0])}–$${fmt(c.total_cost_range?.[1])} | ${c.confidence_score != null ? (c.confidence_score * 100).toFixed(0) + '%' : '—'}`
+                                    ).join('\n');
+                                    navigator.clipboard.writeText(text);
+                                }}
+                                className="text-gray-400 hover:text-white transition-colors flex items-center gap-1 text-xs"
+                                title="Copy history to clipboard"
+                            >
+                                <Copy className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setShowHistory(false)} className="text-gray-400 hover:text-white transition-colors">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                     <div className="flex-1 p-4 space-y-3">
                         {historyLoading && <p className="text-gray-400 text-sm text-center py-8">Loading...</p>}
