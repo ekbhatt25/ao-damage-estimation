@@ -4,7 +4,7 @@ import ImageUpload from './components/ImageUpload';
 import LoadingOverlay from './components/LoadingOverlay';
 import ResultsDisplay from './components/ResultsDisplay';
 import './App.css';
-import aoLogo from './ao-logo.jpg';
+import aoLogo from './Auto_Owners_Logo_full_circle.jpg';
 import aoTextLogo from './ao-text-logo.jpg';
 
 function App() {
