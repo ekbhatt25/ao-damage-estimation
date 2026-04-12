@@ -80,6 +80,8 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
         cost,
         claim_id,
         fraud_flags = [],
+        model_version,
+        inference_ms,
     } = results;
 
     // Effective cost range for a detection (override if present, else original)
@@ -344,7 +346,14 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
                     );
                 })}
 
-                {claim_id && <p className="text-black text-xs text-center">Claim ID: {claim_id}</p>}
+                {claim_id && (
+                    <div className="p-3 bg-gray-900/50 rounded-xl border border-gray-700/50 text-xs text-gray-400 space-y-1">
+                        <p className="font-medium text-gray-300">Claim Record</p>
+                        <p>ID: <span className="text-gray-200 font-mono">{claim_id}</span></p>
+                        {model_version && <p>Model: <span className="text-gray-200">v{model_version}</span></p>}
+                        {inference_ms != null && <p>Analyzed in: <span className="text-gray-200">{inference_ms}ms</span></p>}
+                    </div>
+                )}
 
                 <div className="pt-2 border-t border-gray-700">
                     <button onClick={onReset}
