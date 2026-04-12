@@ -209,6 +209,19 @@ async def detect(
             temp_path.unlink()
 
 
+@app.get("/estimate")
+def estimate_cost(part: str, damage_type: str, severity: str, zip_code: str = ""):
+    """Return accurate cost estimate for a single part using backend labor rates."""
+    result = cost_estimator.estimate(
+        [{"part": part, "damage_type": damage_type, "severity": severity}],
+        zip_code=zip_code,
+    )
+    if result["damaged_parts"]:
+        p = result["damaged_parts"][0]
+        return {"cost_range": p["cost_range"], "action": p["action"], "labor_rate": p["labor_rate"]}
+    return {"cost_range": [0, 0], "action": "repair", "labor_rate": 0}
+
+
 @app.get("/claims")
 def get_claims(session_id: str = "", limit: int = 50):
     """Return claims for this session from the audit log. Audit log is append-only."""

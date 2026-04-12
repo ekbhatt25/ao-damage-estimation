@@ -136,11 +136,22 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
         });
     };
 
-    const applyEdit = (i) => {
+    const applyEdit = async (i) => {
         const { part, damage_type, severity } = pendingEdit;
-        const { cost_range, action } = calcCost(part, damage_type, severity);
-        setOverrides(prev => ({ ...prev, [i]: { part, damage_type, severity, cost_range, action } }));
         setEditingIdx(null);
+        try {
+            const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+            const zip = results?.cost?.zip_code || '';
+            const res = await fetch(
+                `${API_URL}/estimate?part=${encodeURIComponent(part)}&damage_type=${encodeURIComponent(damage_type)}&severity=${encodeURIComponent(severity)}&zip_code=${zip}`
+            );
+            const data = await res.json();
+            setOverrides(prev => ({ ...prev, [i]: { part, damage_type, severity, cost_range: data.cost_range, action: data.action } }));
+        } catch {
+            // Fall back to client-side estimate if backend unreachable
+            const { cost_range, action } = calcCost(part, damage_type, severity);
+            setOverrides(prev => ({ ...prev, [i]: { part, damage_type, severity, cost_range, action } }));
+        }
     };
 
     const cancelEdit = () => setEditingIdx(null);
@@ -496,7 +507,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                                 onClick={() => setClaimHistory([])}
                                 className="w-full py-2 flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 rounded-xl transition-colors"
                             >
-                                Clear view (demo only — audit log preserved)
+                                Clear view
                             </button>
                         </div>
                     )}
