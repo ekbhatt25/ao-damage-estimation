@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X, RotateCcw } from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X, RotateCcw, Info } from 'lucide-react';
 import ImageOverlay from './ImageOverlay';
 
 // ── Client-side cost lookup (mirrors backend cost_estimator.py) ───────────────
@@ -62,9 +62,10 @@ const fmt = (n) => n?.toLocaleString() ?? '—';
 
 // ── Component ──────────────────────────────────────────────────────────────────
 const ResultsDisplay = ({ results, imageUrl, onReset }) => {
-    const [editingIdx,    setEditingIdx]    = useState(null);
-    const [pendingEdit,   setPendingEdit]   = useState({});
-    const [overrides,     setOverrides]     = useState({});   // idx → { part, damage_type, severity, cost_range, action }
+    const [editingIdx,      setEditingIdx]      = useState(null);
+    const [pendingEdit,     setPendingEdit]     = useState({});
+    const [overrides,       setOverrides]       = useState({});   // idx → { part, damage_type, severity, cost_range, action }
+    const [showClaimRecord, setShowClaimRecord] = useState(false);
 
     if (!results) return null;
 
@@ -139,9 +140,18 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
         >
             {/* Header */}
             <div className="p-8 border-b border-gray-700 bg-gradient-to-r from-blue-900/20 to-purple-900/20">
-                <div className="flex items-center gap-3 mb-2">
-                    {error ? <AlertCircle className="w-8 h-8 text-red-400" /> : <CheckCircle className="w-8 h-8 text-green-400" />}
-                    <h2 className="text-2xl font-bold text-white">Analysis Complete</h2>
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                        {error ? <AlertCircle className="w-8 h-8 text-red-400" /> : <CheckCircle className="w-8 h-8 text-green-400" />}
+                        <h2 className="text-2xl font-bold text-white">Analysis Complete</h2>
+                    </div>
+                    {claim_id && (
+                        <button onClick={() => setShowClaimRecord(v => !v)}
+                            className="text-gray-400 hover:text-white transition-colors"
+                            title="Claim record">
+                            <Info className="w-5 h-5" />
+                        </button>
+                    )}
                 </div>
                 {error
                     ? <p className="text-red-400 ml-11">{error}</p>
@@ -346,7 +356,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
                     );
                 })}
 
-                {claim_id && (
+                {showClaimRecord && claim_id && (
                     <div className="p-3 bg-gray-900/50 rounded-xl border border-gray-700/50 text-xs text-gray-400 space-y-1">
                         <p className="font-medium text-gray-300">Claim Record</p>
                         <p>ID: <span className="text-gray-200 font-mono">{claim_id}</span></p>
