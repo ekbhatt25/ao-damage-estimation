@@ -223,6 +223,14 @@ def get_claims(limit: int = 50):
     return {"claims": records}
 
 
+@app.delete("/claims")
+def clear_claims():
+    """Clear the audit log."""
+    if AUDIT_LOG_PATH.exists():
+        AUDIT_LOG_PATH.write_text("")
+    return {"status": "cleared"}
+
+
 @app.get("/health")
 def health():
     return {

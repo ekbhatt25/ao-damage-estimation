@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X, RotateCcw, Info, History, Copy } from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X, RotateCcw, Info, History, Download, Trash2 } from 'lucide-react';
 import ImageOverlay from './ImageOverlay';
 
 // ── Client-side cost lookup (mirrors backend cost_estimator.py) ───────────────
@@ -415,15 +415,25 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => {
-                                    const text = claimHistory.map(c =>
-                                        `${new Date(c.timestamp).toLocaleString()} | ${c.claim_id} | ${c.stp_eligible ? 'Auto-Approved' : c.total_loss ? 'Total Loss' : 'Adjuster Review'} | $${fmt(c.total_cost_range?.[0])}–$${fmt(c.total_cost_range?.[1])} | ${c.confidence_score != null ? (c.confidence_score * 100).toFixed(0) + '%' : '—'}`
-                                    ).join('\n');
-                                    navigator.clipboard.writeText(text);
+                                    const header = 'Timestamp,Claim ID,Status,Cost Low,Cost High,Confidence';
+                                    const rows = claimHistory.map(c => [
+                                        new Date(c.timestamp).toLocaleString(),
+                                        c.claim_id,
+                                        c.total_loss ? 'Total Loss' : c.stp_eligible ? 'Auto-Approved' : 'Adjuster Review',
+                                        c.total_cost_range?.[0] ?? '',
+                                        c.total_cost_range?.[1] ?? '',
+                                        c.confidence_score != null ? (c.confidence_score * 100).toFixed(0) + '%' : '',
+                                    ].join(','));
+                                    const csv = [header, ...rows].join('\n');
+                                    const a = document.createElement('a');
+                                    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+                                    a.download = 'claim_history.csv';
+                                    a.click();
                                 }}
-                                className="text-gray-400 hover:text-white transition-colors flex items-center gap-1 text-xs"
-                                title="Copy history to clipboard"
+                                className="text-gray-400 hover:text-white transition-colors"
+                                title="Export as CSV"
                             >
-                                <Copy className="w-4 h-4" />
+                                <Download className="w-4 h-4" />
                             </button>
                             <button onClick={() => setShowHistory(false)} className="text-gray-400 hover:text-white transition-colors">
                                 <X className="w-5 h-5" />
@@ -461,6 +471,22 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
                             </div>
                         ))}
                     </div>
+                    {!historyLoading && claimHistory.length > 0 && (
+                        <div className="p-4 border-t border-gray-700">
+                            <button
+                                onClick={async () => {
+                                    if (!window.confirm('Clear all claim history? This cannot be undone.')) return;
+                                    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+                                    await fetch(`${API_URL}/claims`, { method: 'DELETE' });
+                                    setClaimHistory([]);
+                                }}
+                                className="w-full py-2 flex items-center justify-center gap-2 text-sm text-red-400 hover:text-red-300 border border-red-800/50 hover:border-red-700 rounded-xl transition-colors"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Clear History
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         )}
