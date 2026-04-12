@@ -34,34 +34,50 @@ const ImageOverlay = ({ imageUrl, detections = [] }) => {
         ctx.scale(dpr, dpr);
         ctx.clearRect(0, 0, cssW, cssH);
 
-        detections.forEach((det) => {
-            if (!det.bbox) return;
+        // Sort ascending by confidence so highest-confidence box is drawn last (on top)
+        const sorted = [...detections]
+            .filter(d => d.bbox)
+            .sort((a, b) => (a.confidence ?? 0) - (b.confidence ?? 0));
+
+        const scaled = sorted.map((det) => {
             const [x1, y1, x2, y2] = det.bbox;
-            const sx = x1 * scaleX;
-            const sy = y1 * scaleY;
-            const sw = (x2 - x1) * scaleX;
-            const sh = (y2 - y1) * scaleY;
+            return {
+                det,
+                sx: x1 * scaleX,
+                sy: y1 * scaleY,
+                sw: (x2 - x1) * scaleX,
+                sh: (y2 - y1) * scaleY,
+                color: getColor(det.severity),
+            };
+        });
 
-            const color = getColor(det.severity);
-
-            // Box
+        // Pass 1: draw all box fills + strokes
+        scaled.forEach(({ sx, sy, sw, sh, color }) => {
+            ctx.fillStyle = color + '22';  // ~13% opacity fill
+            ctx.fillRect(sx, sy, sw, sh);
             ctx.strokeStyle = color;
-            ctx.lineWidth   = 2;
+            ctx.lineWidth = 2;
             ctx.strokeRect(sx, sy, sw, sh);
+        });
 
-            // Label background
+        // Pass 2: draw all labels on top so they're never buried under a box
+        ctx.font = 'bold 11px sans-serif';
+        const padX = 4, padY = 3, textH = 11;
+        scaled.forEach(({ det, sx, sy, color }) => {
             const label = `${det.part} — ${det.damage_type}`;
-            ctx.font = 'bold 11px sans-serif';
             const textW = ctx.measureText(label).width;
-            const padX = 4, padY = 3, textH = 11;
-            const labelY = sy > textH + padY * 2 + 2 ? sy - textH - padY * 2 - 2 : sy + 2;
+            const bgW = textW + padX * 2;
+            const bgH = textH + padY * 2;
+
+            // Place label above box if space, otherwise inside top of box
+            const labelY = sy > bgH + 2 ? sy - bgH - 2 : sy + 2;
+            // Clamp horizontally so label doesn't run off right edge
+            const labelX = Math.min(sx, cssW - bgW - 2);
 
             ctx.fillStyle = color;
-            ctx.fillRect(sx, labelY, textW + padX * 2, textH + padY * 2);
-
-            // Label text
+            ctx.fillRect(labelX, labelY, bgW, bgH);
             ctx.fillStyle = '#000000';
-            ctx.fillText(label, sx + padX, labelY + textH + padY - 2);
+            ctx.fillText(label, labelX + padX, labelY + textH + padY - 2);
         });
     };
 
