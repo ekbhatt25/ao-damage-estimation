@@ -146,11 +146,21 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
                         <h2 className="text-2xl font-bold text-white">Analysis Complete</h2>
                     </div>
                     {claim_id && (
-                        <button onClick={() => setShowClaimRecord(v => !v)}
-                            className="text-gray-400 hover:text-white transition-colors"
-                            title="Claim record">
-                            <Info className="w-5 h-5" />
-                        </button>
+                        <div className="relative">
+                            <button onClick={() => setShowClaimRecord(v => !v)}
+                                className="text-gray-400 hover:text-white transition-colors"
+                                title="Claim record">
+                                <Info className="w-5 h-5" />
+                            </button>
+                            {showClaimRecord && (
+                                <div className="absolute right-0 top-7 z-20 w-64 p-3 bg-gray-900 border border-gray-700 rounded-xl shadow-xl text-xs text-gray-400 space-y-1">
+                                    <p className="font-medium text-gray-300">Claim Record</p>
+                                    <p>ID: <span className="text-gray-200 font-mono break-all">{claim_id}</span></p>
+                                    {model_version && <p>Model: <span className="text-gray-200">v{model_version}</span></p>}
+                                    {inference_ms != null && <p>Analyzed in: <span className="text-gray-200">{inference_ms}ms</span></p>}
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
                 {error
@@ -356,14 +366,6 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
                     );
                 })}
 
-                {showClaimRecord && claim_id && (
-                    <div className="p-3 bg-gray-900/50 rounded-xl border border-gray-700/50 text-xs text-gray-400 space-y-1">
-                        <p className="font-medium text-gray-300">Claim Record</p>
-                        <p>ID: <span className="text-gray-200 font-mono">{claim_id}</span></p>
-                        {model_version && <p>Model: <span className="text-gray-200">v{model_version}</span></p>}
-                        {inference_ms != null && <p>Analyzed in: <span className="text-gray-200">{inference_ms}ms</span></p>}
-                    </div>
-                )}
 
                 <div className="pt-2 border-t border-gray-700">
                     <button onClick={onReset}
