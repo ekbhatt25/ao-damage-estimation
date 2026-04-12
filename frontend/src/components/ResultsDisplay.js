@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X, RotateCcw } from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X, RotateCcw, Info, History, Download, Trash2 } from 'lucide-react';
 import ImageOverlay from './ImageOverlay';
 
 // ── Client-side cost lookup (mirrors backend cost_estimator.py) ───────────────
@@ -62,9 +62,28 @@ const fmt = (n) => n?.toLocaleString() ?? '—';
 
 // ── Component ──────────────────────────────────────────────────────────────────
 const ResultsDisplay = ({ results, imageUrl, onReset }) => {
-    const [editingIdx,    setEditingIdx]    = useState(null);
-    const [pendingEdit,   setPendingEdit]   = useState({});
-    const [overrides,     setOverrides]     = useState({});   // idx → { part, damage_type, severity, cost_range, action }
+    const [editingIdx,      setEditingIdx]      = useState(null);
+    const [pendingEdit,     setPendingEdit]     = useState({});
+    const [overrides,       setOverrides]       = useState({});   // idx → { part, damage_type, severity, cost_range, action }
+    const [showClaimRecord, setShowClaimRecord] = useState(false);
+    const [showHistory,     setShowHistory]     = useState(false);
+    const [claimHistory,    setClaimHistory]    = useState([]);
+    const [historyLoading,  setHistoryLoading]  = useState(false);
+
+    const openHistory = async () => {
+        setShowHistory(true);
+        setHistoryLoading(true);
+        try {
+            const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+            const res = await fetch(`${API_URL}/claims`);
+            const data = await res.json();
+            setClaimHistory(data.claims || []);
+        } catch {
+            setClaimHistory([]);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
 
     if (!results) return null;
 
@@ -131,7 +150,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
         setEditingIdx(null);
     };
 
-    return (
+    return (<>
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -139,9 +158,28 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
         >
             {/* Header */}
             <div className="p-8 border-b border-gray-700 bg-gradient-to-r from-blue-900/20 to-purple-900/20">
-                <div className="flex items-center gap-3 mb-2">
-                    {error ? <AlertCircle className="w-8 h-8 text-red-400" /> : <CheckCircle className="w-8 h-8 text-green-400" />}
-                    <h2 className="text-2xl font-bold text-white">Analysis Complete</h2>
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                        {error ? <AlertCircle className="w-8 h-8 text-red-400" /> : <CheckCircle className="w-8 h-8 text-green-400" />}
+                        <h2 className="text-2xl font-bold text-white">Analysis Complete</h2>
+                    </div>
+                    {claim_id && (
+                        <div className="relative">
+                            <button onClick={() => setShowClaimRecord(v => !v)}
+                                className="text-gray-400 hover:text-white transition-colors"
+                                title="Claim record">
+                                <Info className="w-5 h-5" />
+                            </button>
+                            {showClaimRecord && (
+                                <div className="absolute right-0 top-7 z-20 w-64 p-3 bg-gray-900 border border-gray-700 rounded-xl shadow-xl text-xs text-gray-400 space-y-1">
+                                    <p className="font-medium text-gray-300">Claim Record</p>
+                                    <p>ID: <span className="text-gray-200 font-mono break-all">{claim_id}</span></p>
+                                    {model_version && <p>Model: <span className="text-gray-200">v{model_version}</span></p>}
+                                    {inference_ms != null && <p>Analyzed in: <span className="text-gray-200">{inference_ms}ms</span></p>}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
                 {error
                     ? <p className="text-red-400 ml-11">{error}</p>
@@ -346,25 +384,113 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
                     );
                 })}
 
-                {claim_id && (
-                    <div className="p-3 bg-gray-900/50 rounded-xl border border-gray-700/50 text-xs text-gray-400 space-y-1">
-                        <p className="font-medium text-gray-300">Claim Record</p>
-                        <p>ID: <span className="text-gray-200 font-mono">{claim_id}</span></p>
-                        {model_version && <p>Model: <span className="text-gray-200">v{model_version}</span></p>}
-                        {inference_ms != null && <p>Analyzed in: <span className="text-gray-200">{inference_ms}ms</span></p>}
-                    </div>
-                )}
 
-                <div className="pt-2 border-t border-gray-700">
+                <div className="pt-2 border-t border-gray-700 space-y-3">
                     <button onClick={onReset}
                         className="w-full py-4 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
                         <RefreshCw className="w-5 h-5" />
                         Analyze Another Image
                     </button>
+                    <button onClick={openHistory}
+                        className="w-full py-4 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
+                        <History className="w-5 h-5" />
+                        View Claim History
+                    </button>
                 </div>
             </div>
         </motion.div>
-    );
+
+        {/* Claim History Drawer */}
+        {showHistory && (
+            <div className="fixed inset-0 z-50 flex justify-end">
+                {/* Backdrop */}
+                <div className="absolute inset-0 bg-black/60" onClick={() => setShowHistory(false)} />
+                {/* Panel */}
+                <div className="relative w-full max-w-md bg-gray-900 border-l border-gray-700 h-full overflow-y-auto shadow-2xl flex flex-col">
+                    <div className="flex items-center justify-between p-6 border-b border-gray-700">
+                        <div className="flex items-center gap-2">
+                            <History className="w-5 h-5 text-gray-400" />
+                            <h3 className="text-white font-bold text-lg">Claim History</h3>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => {
+                                    const header = 'Timestamp,Claim ID,Status,Cost Low,Cost High,Confidence';
+                                    const rows = claimHistory.map(c => [
+                                        new Date(c.timestamp).toLocaleString(),
+                                        c.claim_id,
+                                        c.total_loss ? 'Total Loss' : c.stp_eligible ? 'Auto-Approved' : 'Adjuster Review',
+                                        c.total_cost_range?.[0] ?? '',
+                                        c.total_cost_range?.[1] ?? '',
+                                        c.confidence_score != null ? (c.confidence_score * 100).toFixed(0) + '%' : '',
+                                    ].join(','));
+                                    const csv = [header, ...rows].join('\n');
+                                    const a = document.createElement('a');
+                                    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+                                    a.download = 'claim_history.csv';
+                                    a.click();
+                                }}
+                                className="text-gray-400 hover:text-white transition-colors"
+                                title="Export as CSV"
+                            >
+                                <Download className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setShowHistory(false)} className="text-gray-400 hover:text-white transition-colors">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex-1 p-4 space-y-3">
+                        {historyLoading && <p className="text-gray-400 text-sm text-center py-8">Loading...</p>}
+                        {!historyLoading && claimHistory.length === 0 && (
+                            <p className="text-gray-400 text-sm text-center py-8">No claims on record yet.</p>
+                        )}
+                        {!historyLoading && claimHistory.map((c) => (
+                            <div key={c.claim_id} className="p-4 bg-gray-800 rounded-xl border border-gray-700 text-sm space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                                        c.total_loss ? 'bg-red-900/60 text-red-400'
+                                        : c.stp_eligible ? 'bg-green-900/60 text-green-400'
+                                        : 'bg-yellow-900/60 text-yellow-400'
+                                    }`}>
+                                        {c.total_loss ? 'Total Loss' : c.stp_eligible ? 'Auto-Approved' : 'Adjuster Review'}
+                                    </span>
+                                    <span className="text-gray-500 text-xs">
+                                        {new Date(c.timestamp).toLocaleString()}
+                                    </span>
+                                </div>
+                                <p className="text-gray-400 font-mono text-xs truncate">{c.claim_id}</p>
+                                {c.total_cost_range?.length === 2 && (
+                                    <p className="text-white font-medium">
+                                        ${fmt(c.total_cost_range[0])} – ${fmt(c.total_cost_range[1])}
+                                    </p>
+                                )}
+                                {c.confidence_score != null && (
+                                    <p className="text-gray-400 text-xs">Confidence: {(c.confidence_score * 100).toFixed(0)}%</p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    {!historyLoading && claimHistory.length > 0 && (
+                        <div className="p-4 border-t border-gray-700">
+                            <button
+                                onClick={async () => {
+                                    if (!window.confirm('Clear all claim history? This cannot be undone.')) return;
+                                    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+                                    await fetch(`${API_URL}/claims`, { method: 'DELETE' });
+                                    setClaimHistory([]);
+                                }}
+                                className="w-full py-2 flex items-center justify-center gap-2 text-sm text-red-400 hover:text-red-300 border border-red-800/50 hover:border-red-700 rounded-xl transition-colors"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Clear History
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        )}
+    </>);
 };
 
 export default ResultsDisplay;
