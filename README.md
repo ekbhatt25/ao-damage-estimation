@@ -38,15 +38,10 @@ Preprocessing
     └── Fraud signals — flagged in API response and audit log
             ├── low_pixel_variance: nearly uniform image — suggests a solid fill
             │   or digitally generated image rather than a real damage photo
-            ├── unusually_sharp: sharpness anomalously high for a damage photo —
-            │   suggests a stock or professionally shot photo being submitted
-            │   to exaggerate or fabricate damage
-            ├── exact_aspect_ratio: dimensions match a perfect standard ratio —
-            │   common in edited or AI-generated images
             ├── editing_software_detected: EXIF Software tag contains Photoshop,
             │   GIMP, Lightroom, etc. — image was manipulated after capture
-            └── duplicate_image: perceptual hash matches a previously submitted
-                photo — same damage being claimed more than once
+            └── duplicate_image: perceptual hash matches a photo submitted within
+                the last 60 seconds — same damage being claimed more than once
     │
     ├──▶ Mask R-CNN (parts) ──▶ Part detections (class, bbox, mask, score)
     │
@@ -65,8 +60,8 @@ Cost Estimation (GradientBoosting ML model)
     │
     ▼
 Gemini Flash — natural language explanation + STP eligibility decision
-    ├── STP criteria: cost < $1,500, confidence > 70%, not a total loss
-    └── Auto-escalation to adjuster if confidence < 60% or total loss
+    ├── STP criteria: cost < $1,500, confidence > 60%, not a total loss
+    └── Auto-escalation to adjuster if confidence < 40% or total loss
     │
     ▼
 Audit Trail (JSONL) — claim ID, timestamp, model version, full decision log
