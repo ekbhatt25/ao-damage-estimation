@@ -19,6 +19,7 @@ from audit_logger import log_claim, AUDIT_LOG_PATH
 
 try:
     from fraud_detector import check_duplicate, check_metadata
+
     _fraud_detection_available = True
     print("✓ Fraud detector ready")
 except Exception as e:
@@ -46,11 +47,14 @@ print("✓ Cost estimator ready")
 # LLM client is optional — gracefully degrades if GEMINI_API_KEY is missing
 try:
     from llm_client import LLMClient
+
     llm_client = LLMClient()
     print("✓ LLM client ready")
     _llm_available = True
 except Exception as e:
-    print(f"⚠ LLM client unavailable ({e}) — STP decisions will use rule-based fallback")
+    print(
+        f"⚠ LLM client unavailable ({e}) — STP decisions will use rule-based fallback"
+    )
     llm_client = None
     _llm_available = False
 
@@ -65,8 +69,8 @@ def _rule_based_stp(cost_output: dict, detections: list) -> dict:
     severities = [d.get("severity", "minor") for d in detections]
     total_loss = cost_output.get("total_loss", False)
 
-    cost_ok        = total_cost < 1500
-    confidence_ok  = confidence > 0.60
+    cost_ok = total_cost < 1500
+    confidence_ok = confidence > 0.60
     not_total_loss = not total_loss
 
     stp_eligible = cost_ok and confidence_ok and not_total_loss
@@ -78,9 +82,12 @@ def _rule_based_stp(cost_output: dict, detections: list) -> dict:
         )
     else:
         reasons = []
-        if total_loss: reasons.append("total loss")
-        if not cost_ok: reasons.append(f"cost ${total_cost:.0f} exceeds $1,500")
-        if not confidence_ok: reasons.append(f"{confidence:.0%} confidence below 60%")
+        if total_loss:
+            reasons.append("total loss")
+        if not cost_ok:
+            reasons.append(f"cost ${total_cost:.0f} exceeds $1,500")
+        if not confidence_ok:
+            reasons.append(f"{confidence:.0%} confidence below 60%")
         reasoning = f"Manual review required: {', '.join(reasons)}."
 
     requires_review = not stp_eligible or confidence < 0.40 or total_loss
@@ -93,16 +100,16 @@ def _rule_based_stp(cost_output: dict, detections: list) -> dict:
     )
 
     return {
-        "damaged_parts":           cost_output["damaged_parts"],
-        "total_cost_range":        cost_output["total_cost_range"],
-        "explanation":             explanation,
-        "confidence_score":        round(confidence, 2),
-        "stp_eligible":            stp_eligible,
-        "stp_reasoning":           reasoning,
+        "damaged_parts": cost_output["damaged_parts"],
+        "total_cost_range": cost_output["total_cost_range"],
+        "explanation": explanation,
+        "confidence_score": round(confidence, 2),
+        "stp_eligible": stp_eligible,
+        "stp_reasoning": reasoning,
         "requires_adjuster_review": requires_review,
-        "total_loss":              total_loss,
-        "override_allowed":        True,
-        "model_version":           "1.0.0",
+        "total_loss": total_loss,
+        "override_allowed": True,
+        "model_version": "1.0.0",
     }
 
 
@@ -132,7 +139,10 @@ async def detect(
         t_cv = time.perf_counter()
         detections, fraud_flags = cv_detector.detect(str(temp_path))
         cv_ms = round((time.perf_counter() - t_cv) * 1000, 1)
-        print(f"[TIMING] cv_total:      {cv_ms}ms  detections={len(detections)}", flush=True)
+        print(
+            f"[TIMING] cv_total:      {cv_ms}ms  detections={len(detections)}",
+            flush=True,
+        )
         inference_ms = cv_ms
 
         # ── 1b. Additional fraud signals (metadata + duplicate) ───────────────
@@ -162,38 +172,48 @@ async def detect(
         t_llm = time.perf_counter()
         if _llm_available:
             try:
-                llm_output = llm_client.process_claim(cv_output_for_llm, cost_output, vehicle_info)
+                llm_output = llm_client.process_claim(
+                    cv_output_for_llm, cost_output, vehicle_info
+                )
             except Exception as e:
                 print(f"LLM error: {e} — using rule-based fallback")
                 llm_output = _rule_based_stp(cost_output, detections)
         else:
             llm_output = _rule_based_stp(cost_output, detections)
         llm_ms = round((time.perf_counter() - t_llm) * 1000, 1)
-        print(f"[TIMING] stp_decision:  {llm_ms}ms  stp={llm_output.get('stp_eligible')}", flush=True)
-        print(f"[TIMING] request_total: {round((time.perf_counter() - t0) * 1000, 1)}ms", flush=True)
+        print(
+            f"[TIMING] stp_decision:  {llm_ms}ms  stp={llm_output.get('stp_eligible')}",
+            flush=True,
+        )
+        print(
+            f"[TIMING] request_total: {round((time.perf_counter() - t0) * 1000, 1)}ms",
+            flush=True,
+        )
 
         # ── 4. Audit trail ────────────────────────────────────────────────────
         try:
-            claim_id = log_claim(cv_output_for_llm, cost_output, llm_output, session_id=session_id)
+            claim_id = log_claim(
+                cv_output_for_llm, cost_output, llm_output, session_id=session_id
+            )
         except Exception as e:
             print(f"Audit log warning: {e}")
             claim_id = None
 
         return {
-            "detections":              detections,
-            "cost":                    cost_output,
-            "explanation":             llm_output.get("explanation", ""),
-            "confidence_score":        llm_output.get("confidence_score"),
-            "stp_eligible":            llm_output.get("stp_eligible"),
-            "stp_reasoning":           llm_output.get("stp_reasoning"),
+            "detections": detections,
+            "cost": cost_output,
+            "explanation": llm_output.get("explanation", ""),
+            "confidence_score": llm_output.get("confidence_score"),
+            "stp_eligible": llm_output.get("stp_eligible"),
+            "stp_reasoning": llm_output.get("stp_reasoning"),
             "requires_adjuster_review": llm_output.get("requires_adjuster_review"),
-            "total_loss":              llm_output.get("total_loss", False),
-            "override_allowed":        True,
-            "model_version":           "1.0.0",
-            "fraud_flags":             fraud_flags,
-            "inference_ms":            inference_ms,
-            "claim_id":                claim_id,
-            "state":                   state.upper() if state else "",
+            "total_loss": llm_output.get("total_loss", False),
+            "override_allowed": True,
+            "model_version": "1.0.0",
+            "fraud_flags": fraud_flags,
+            "inference_ms": inference_ms,
+            "claim_id": claim_id,
+            "state": state.upper() if state else "",
             # Kept for backwards compatibility with ResultsDisplay
             "summary": {
                 "total_damaged_parts": len(detections),
@@ -219,7 +239,11 @@ def estimate_cost(part: str, damage_type: str, severity: str, state: str = ""):
     )
     if result["damaged_parts"]:
         p = result["damaged_parts"][0]
-        return {"cost_range": p["cost_range"], "action": p["action"], "labor_rate": p["labor_rate"]}
+        return {
+            "cost_range": p["cost_range"],
+            "action": p["action"],
+            "labor_rate": p["labor_rate"],
+        }
     return {"cost_range": [0, 0], "action": "repair", "labor_rate": 0}
 
 
@@ -247,7 +271,7 @@ def health():
     return {
         "status": "healthy",
         "models": "Mask R-CNN (parts) + YOLOv8m (damage) + GradientBoosting (cost)",
-        "llm": "gemini-1.5-flash" if _llm_available else "unavailable",
+        "llm": "gemini-3.1-flash-lite-preview" if _llm_available else "unavailable",
     }
 
 
@@ -302,4 +326,5 @@ def home():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
