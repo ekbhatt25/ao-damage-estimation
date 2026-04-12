@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X } from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X, RotateCcw } from 'lucide-react';
 import ImageOverlay from './ImageOverlay';
 
 // ── Client-side cost lookup (mirrors backend cost_estimator.py) ───────────────
@@ -124,6 +124,11 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
 
     const cancelEdit = () => setEditingIdx(null);
 
+    const resetOverride = (i) => {
+        setOverrides(prev => { const next = { ...prev }; delete next[i]; return next; });
+        setEditingIdx(null);
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -204,7 +209,17 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
                                     ${fmt(displayTotal[0])} – ${fmt(displayTotal[1])}
                                 </p>
                                 {Object.keys(overrides).length > 0 && (
-                                    <p className="text-orange-400 text-xs mt-1">Adjuster adjusted</p>
+                                    <div className="flex items-center justify-between mt-1">
+                                        <p className="text-orange-400 text-xs">Adjuster adjusted</p>
+                                        <button
+                                            onClick={() => setOverrides({})}
+                                            className="text-xs text-gray-400 hover:text-white flex items-center gap-1 transition-colors"
+                                            title="Reset all overrides to original AI estimates"
+                                        >
+                                            <RotateCcw className="w-3 h-3" />
+                                            Reset all
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         )}
@@ -258,6 +273,11 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
                                         <button onClick={() => applyEdit(i)} className="text-green-400 hover:text-green-300 transition-colors" title="Apply">
                                             <Check className="w-4 h-4" />
                                         </button>
+                                        {isOverride && (
+                                            <button onClick={() => resetOverride(i)} className="text-gray-400 hover:text-white transition-colors" title="Reset to original">
+                                                <RotateCcw className="w-4 h-4" />
+                                            </button>
+                                        )}
                                         <button onClick={cancelEdit} className="text-red-400 hover:text-red-300 transition-colors" title="Cancel">
                                             <X className="w-4 h-4" />
                                         </button>
