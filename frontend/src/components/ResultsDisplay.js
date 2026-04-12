@@ -415,15 +415,34 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => {
-                                    const header = 'Timestamp,Claim ID,Status,Cost Low,Cost High,Confidence';
-                                    const rows = claimHistory.map(c => [
-                                        new Date(c.timestamp).toLocaleString(),
-                                        c.claim_id,
-                                        c.total_loss ? 'Total Loss' : c.stp_eligible ? 'Auto-Approved' : 'Adjuster Review',
-                                        c.total_cost_range?.[0] ?? '',
-                                        c.total_cost_range?.[1] ?? '',
-                                        c.confidence_score != null ? (c.confidence_score * 100).toFixed(0) + '%' : '',
-                                    ].join(','));
+                                    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+                                    const header = [
+                                        'Submission Timestamp',
+                                        'Claim ID',
+                                        'STP Decision',
+                                        'Adjuster Review Required',
+                                        'Damaged Parts (Part — Damage Type — Severity)',
+                                        'Estimated Repair Cost Low ($)',
+                                        'Estimated Repair Cost High ($)',
+                                        'AI Confidence (%)',
+                                        'Pipeline Version',
+                                    ].join(',');
+                                    const rows = claimHistory.map(c => {
+                                        const parts = (c.damaged_parts || [])
+                                            .map(p => `${p.part} — ${p.damage_type} — ${p.severity}`)
+                                            .join('; ');
+                                        return [
+                                            esc(new Date(c.timestamp).toLocaleString()),
+                                            esc(c.claim_id),
+                                            esc(c.total_loss ? 'Total Loss' : c.stp_eligible ? 'Auto-Approved' : 'Adjuster Review Required'),
+                                            esc(c.requires_adjuster_review ? 'Yes' : 'No'),
+                                            esc(parts),
+                                            c.total_cost_range?.[0] ?? '',
+                                            c.total_cost_range?.[1] ?? '',
+                                            c.confidence_score != null ? (c.confidence_score * 100).toFixed(0) : '',
+                                            esc(c.model_version ? `v${c.model_version}` : ''),
+                                        ].join(',');
+                                    });
                                     const csv = [header, ...rows].join('\n');
                                     const a = document.createElement('a');
                                     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
