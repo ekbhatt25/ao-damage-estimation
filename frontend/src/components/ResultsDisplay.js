@@ -140,9 +140,9 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
         const { part, damage_type, severity } = pendingEdit;
         try {
             const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-            const zip = results?.cost?.zip_code || '';
+            const st = results?.state || '';
             const res = await fetch(
-                `${API_URL}/estimate?part=${encodeURIComponent(part)}&damage_type=${encodeURIComponent(damage_type)}&severity=${encodeURIComponent(severity)}&zip_code=${zip}`
+                `${API_URL}/estimate?part=${encodeURIComponent(part)}&damage_type=${encodeURIComponent(damage_type)}&severity=${encodeURIComponent(severity)}&state=${st}`
             );
             const data = await res.json();
             setOverrides(prev => ({ ...prev, [i]: { part, damage_type, severity, cost_range: data.cost_range, action: data.action } }));

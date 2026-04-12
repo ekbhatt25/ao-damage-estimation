@@ -22,7 +22,7 @@ function App() {
   const [appState, setAppState] = useState('idle');
   const [image, setImage] = useState(null);
   const [results, setResults] = useState(null);
-  const [zipCode, setZipCode] = useState('');
+  const [state, setState] = useState('');
   const abortControllerRef = React.useRef(null);
 
   const handleUpload = async (file) => {
@@ -35,7 +35,7 @@ function App() {
     const formData = new FormData();
     formData.append('image', file);
     formData.append('session_id', SESSION_ID);
-    formData.append('zipCode', zipCode);
+    formData.append('state', state);
 
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -105,15 +105,64 @@ function App() {
 
                 <div className="flex justify-center mb-6">
                   <div className="flex items-center gap-3 bg-white/10 border border-gray-600 rounded-xl px-4 py-3">
-                    <label className="text-black text-sm font-medium whitespace-nowrap">ZIP Code (optional)</label>
-                    <input
-                      type="text"
-                      maxLength={5}
-                      value={zipCode}
-                      onChange={e => setZipCode(e.target.value.replace(/\D/g, ''))}
-                      placeholder="e.g. 48823"
-                      className="bg-transparent text-black placeholder-gray-400 text-sm w-24 outline-none border-b border-gray-500 focus:border-white pb-0.5"
-                    />
+                    <label className="text-black text-sm font-medium whitespace-nowrap">State</label>
+                    <select
+                      value={state}
+                      onChange={e => setState(e.target.value)}
+                      className="bg-transparent text-black text-sm outline-none border-b border-gray-500 focus:border-white pb-0.5 cursor-pointer"
+                    >
+                      <option value="">— select state —</option>
+                      <option value="AL">Alabama</option>
+                      <option value="AK">Alaska</option>
+                      <option value="AZ">Arizona</option>
+                      <option value="AR">Arkansas</option>
+                      <option value="CA">California</option>
+                      <option value="CO">Colorado</option>
+                      <option value="CT">Connecticut</option>
+                      <option value="DE">Delaware</option>
+                      <option value="FL">Florida</option>
+                      <option value="GA">Georgia</option>
+                      <option value="HI">Hawaii</option>
+                      <option value="ID">Idaho</option>
+                      <option value="IL">Illinois</option>
+                      <option value="IN">Indiana</option>
+                      <option value="IA">Iowa</option>
+                      <option value="KS">Kansas</option>
+                      <option value="KY">Kentucky</option>
+                      <option value="LA">Louisiana</option>
+                      <option value="ME">Maine</option>
+                      <option value="MD">Maryland</option>
+                      <option value="MA">Massachusetts</option>
+                      <option value="MI">Michigan</option>
+                      <option value="MN">Minnesota</option>
+                      <option value="MS">Mississippi</option>
+                      <option value="MO">Missouri</option>
+                      <option value="MT">Montana</option>
+                      <option value="NE">Nebraska</option>
+                      <option value="NV">Nevada</option>
+                      <option value="NH">New Hampshire</option>
+                      <option value="NJ">New Jersey</option>
+                      <option value="NM">New Mexico</option>
+                      <option value="NY">New York</option>
+                      <option value="NC">North Carolina</option>
+                      <option value="ND">North Dakota</option>
+                      <option value="OH">Ohio</option>
+                      <option value="OK">Oklahoma</option>
+                      <option value="OR">Oregon</option>
+                      <option value="PA">Pennsylvania</option>
+                      <option value="RI">Rhode Island</option>
+                      <option value="SC">South Carolina</option>
+                      <option value="SD">South Dakota</option>
+                      <option value="TN">Tennessee</option>
+                      <option value="TX">Texas</option>
+                      <option value="UT">Utah</option>
+                      <option value="VT">Vermont</option>
+                      <option value="VA">Virginia</option>
+                      <option value="WA">Washington</option>
+                      <option value="WV">West Virginia</option>
+                      <option value="WI">Wisconsin</option>
+                      <option value="WY">Wyoming</option>
+                    </select>
                   </div>
                 </div>
                 <ImageUpload onUpload={handleUpload} />

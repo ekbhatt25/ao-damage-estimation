@@ -81,12 +81,6 @@ REPLACE_ONLY_PARTS = {
     "Headlight", "Tail-light", "Front-wheel", "Back-wheel", "License-plate",
 }
 
-# ZIP first digit → 2-letter state abbreviation (most common state in that range)
-# Used to look up labor rates when only a ZIP is available
-_ZIP_PREFIX_TO_STATE = {
-    "0": "CT", "1": "NY", "2": "VA", "3": "FL", "4": "MI",
-    "5": "MN", "6": "IL", "7": "TX", "8": "CO", "9": "CA",
-}
 
 # ── ACV estimation (for total loss calculation) ───────────────────────────────
 # Straight-line depreciation: average new mid-size sedan ~$35,000
@@ -152,10 +146,9 @@ BASE_COSTS   = _load_base_costs()
 _LABOR_RATES = _load_labor_rates()
 
 
-def _get_labor_rates_for_zip(zip_code: str) -> dict:
-    """Return body/mechanical/paint rates for a given ZIP code."""
-    state = _ZIP_PREFIX_TO_STATE.get(zip_code[0] if zip_code else "", "")
-    rates = _LABOR_RATES.get(state, {})
+def _get_labor_rates_for_state(state: str) -> dict:
+    """Return body/mechanical/paint rates for a given 2-letter state abbreviation."""
+    rates = _LABOR_RATES.get(state.upper() if state else "", {})
     return {
         "body":       rates.get("body",       _FALLBACK_LABOR["body"]),
         "mechanical": rates.get("mechanical", _FALLBACK_LABOR["mechanical"]),
@@ -228,20 +221,20 @@ class CostEstimator:
         _LABOR_RATES = _load_labor_rates()
         _train_and_save()
 
-    def estimate(self, cv_damaged_parts: list, zip_code: str = "",
+    def estimate(self, cv_damaged_parts: list, state: str = "",
                  vehicle_year: int = 2021) -> dict:  # default: ~4yr old vehicle, ~$20k ACV
         """
         Convert CV damaged_parts into a cost_output dict for llm_client.process_claim().
 
         Args:
             cv_damaged_parts: list of {part, damage_type, severity} from CV pipeline
-            zip_code:         5-digit ZIP for regional labor rate lookup
+            state:            2-letter state abbreviation for regional labor rate lookup
             vehicle_year:     model year for ACV / total loss calculation
 
         Returns:
             cost_output dict including total_loss flag
         """
-        labor_rates = _get_labor_rates_for_zip(zip_code)
+        labor_rates = _get_labor_rates_for_state(state)
         le_part     = self._encoders["part"]
         le_dmg      = self._encoders["damage_type"]
         le_sev      = self._encoders["severity"]
@@ -291,7 +284,7 @@ class CostEstimator:
         return {
             "damaged_parts":         result_parts,
             "total_cost_range":      [total_low, total_high],
-            "zip_code":              zip_code or "00000",
+            "state":                 state.upper() if state else "",
             "labor_rates":           labor_rates,
             "acv_estimate":          round(acv),
             "total_loss":            total_loss,

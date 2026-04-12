@@ -109,7 +109,7 @@ def _rule_based_stp(cost_output: dict, detections: list) -> dict:
 @app.post("/detect")
 async def detect(
     image: UploadFile = File(...),
-    zipCode: str = Form(default=""),
+    state: str = Form(default=""),
     session_id: str = Form(default=""),
 ):
     """
@@ -151,7 +151,7 @@ async def detect(
 
         # ── 2. Cost estimation ────────────────────────────────────────────────
         t_cost = time.perf_counter()
-        cost_output = cost_estimator.estimate(detections, zip_code=zipCode)
+        cost_output = cost_estimator.estimate(detections, state=state)
         cost_ms = round((time.perf_counter() - t_cost) * 1000, 1)
         print(f"[TIMING] cost_estimator:{cost_ms}ms", flush=True)
 
@@ -193,6 +193,7 @@ async def detect(
             "fraud_flags":             fraud_flags,
             "inference_ms":            inference_ms,
             "claim_id":                claim_id,
+            "state":                   state.upper() if state else "",
             # Kept for backwards compatibility with ResultsDisplay
             "summary": {
                 "total_damaged_parts": len(detections),
@@ -210,11 +211,11 @@ async def detect(
 
 
 @app.get("/estimate")
-def estimate_cost(part: str, damage_type: str, severity: str, zip_code: str = ""):
+def estimate_cost(part: str, damage_type: str, severity: str, state: str = ""):
     """Return accurate cost estimate for a single part using backend labor rates."""
     result = cost_estimator.estimate(
         [{"part": part, "damage_type": damage_type, "severity": severity}],
-        zip_code=zip_code,
+        state=state,
     )
     if result["damaged_parts"]:
         p = result["damaged_parts"][0]

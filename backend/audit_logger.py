@@ -34,7 +34,7 @@ def log_claim(cv_output: dict, cost_output: dict, llm_output: dict, session_id: 
         "override_allowed":      llm_output.get("override_allowed", True),
         "explanation":           llm_output.get("explanation", ""),
         "acv_estimate":          cost_output.get("acv_estimate"),
-        "zip_code":              cost_output.get("zip_code"),
+        "state":                 cost_output.get("state"),
         "labor_rates":           cost_output.get("labor_rates"),
         "cv_inference_parts":    len(cv_output.get("damaged_parts", [])),
     }
