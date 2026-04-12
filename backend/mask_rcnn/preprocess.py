@@ -107,7 +107,7 @@ def quality_gate(img: Image.Image) -> QualityReport:
     # Extremely uniform image — possible screenshot or digital manipulation
     channel_stds = [arr[:, :, c].std() for c in range(3)]
     if max(channel_stds) < 15.0:
-        fraud_flags.append("low_pixel_variance (possible screenshot or solid fill)")
+        fraud_flags.append("low_pixel_variance (possible solid fill or digitally generated image)")
 
     return QualityReport(
         passed=len(issues) == 0,
