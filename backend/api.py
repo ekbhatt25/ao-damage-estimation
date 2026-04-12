@@ -7,6 +7,7 @@ from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pathlib import Path
+import json
 import shutil
 import time
 
@@ -14,7 +15,7 @@ from PIL import Image as PILImage
 
 from cv_detector import CVDetector
 from cost_estimator import CostEstimator
-from audit_logger import log_claim
+from audit_logger import log_claim, AUDIT_LOG_PATH
 
 try:
     from fraud_detector import check_duplicate, check_metadata
@@ -205,6 +206,21 @@ async def detect(
     finally:
         if temp_path.exists():
             temp_path.unlink()
+
+
+@app.get("/claims")
+def get_claims(limit: int = 50):
+    """Return the most recent claims from the audit log."""
+    if not AUDIT_LOG_PATH.exists():
+        return {"claims": []}
+    lines = AUDIT_LOG_PATH.read_text().strip().splitlines()
+    records = []
+    for line in reversed(lines[-limit:]):
+        try:
+            records.append(json.loads(line))
+        except Exception:
+            pass
+    return {"claims": records}
 
 
 @app.get("/health")
