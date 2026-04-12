@@ -110,6 +110,7 @@ def _rule_based_stp(cost_output: dict, detections: list) -> dict:
 async def detect(
     image: UploadFile = File(...),
     zipCode: str = Form(default=""),
+    session_id: str = Form(default=""),
 ):
     """
     Upload a vehicle photo. Returns detected parts, damage types, cost estimate,
@@ -173,7 +174,7 @@ async def detect(
 
         # ── 4. Audit trail ────────────────────────────────────────────────────
         try:
-            claim_id = log_claim(cv_output_for_llm, cost_output, llm_output)
+            claim_id = log_claim(cv_output_for_llm, cost_output, llm_output, session_id=session_id)
         except Exception as e:
             print(f"Audit log warning: {e}")
             claim_id = None
@@ -209,26 +210,22 @@ async def detect(
 
 
 @app.get("/claims")
-def get_claims(limit: int = 50):
-    """Return the most recent claims from the audit log."""
+def get_claims(session_id: str = "", limit: int = 50):
+    """Return claims for this session from the audit log. Audit log is append-only."""
     if not AUDIT_LOG_PATH.exists():
         return {"claims": []}
     lines = AUDIT_LOG_PATH.read_text().strip().splitlines()
     records = []
-    for line in reversed(lines[-limit:]):
+    for line in reversed(lines):
         try:
-            records.append(json.loads(line))
+            r = json.loads(line)
+            if not session_id or r.get("session_id") == session_id:
+                records.append(r)
+                if len(records) >= limit:
+                    break
         except Exception:
             pass
     return {"claims": records}
-
-
-@app.delete("/claims")
-def clear_claims():
-    """Clear the audit log."""
-    if AUDIT_LOG_PATH.exists():
-        AUDIT_LOG_PATH.write_text("")
-    return {"status": "cleared"}
 
 
 @app.get("/health")

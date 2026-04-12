@@ -12,7 +12,7 @@ from pathlib import Path
 AUDIT_LOG_PATH = Path(__file__).parent.parent / "audit_log.jsonl"
 
 
-def log_claim(cv_output: dict, cost_output: dict, llm_output: dict) -> str:
+def log_claim(cv_output: dict, cost_output: dict, llm_output: dict, session_id: str = "") -> str:
     """
     Write one audit record per claim. Returns the claim_id.
     Each line in audit_log.jsonl is a self-contained JSON record.
@@ -21,6 +21,7 @@ def log_claim(cv_output: dict, cost_output: dict, llm_output: dict) -> str:
 
     record = {
         "claim_id":              claim_id,
+        "session_id":            session_id,
         "timestamp":             datetime.now(timezone.utc).isoformat(),
         "model_version":         llm_output.get("model_version", "1.0.0"),
         "damaged_parts":         llm_output.get("damaged_parts", []),

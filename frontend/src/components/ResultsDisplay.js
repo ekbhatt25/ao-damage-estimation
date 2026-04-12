@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X, RotateCcw, Info, History, Download, Trash2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X, RotateCcw, Info, History, Download } from 'lucide-react';
 import ImageOverlay from './ImageOverlay';
 
 // ── Client-side cost lookup (mirrors backend cost_estimator.py) ───────────────
@@ -61,7 +61,7 @@ const severityDots = (severity) => {
 const fmt = (n) => n?.toLocaleString() ?? '—';
 
 // ── Component ──────────────────────────────────────────────────────────────────
-const ResultsDisplay = ({ results, imageUrl, onReset }) => {
+const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
     const [editingIdx,      setEditingIdx]      = useState(null);
     const [pendingEdit,     setPendingEdit]     = useState({});
     const [overrides,       setOverrides]       = useState({});   // idx → { part, damage_type, severity, cost_range, action }
@@ -75,7 +75,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
         setHistoryLoading(true);
         try {
             const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-            const res = await fetch(`${API_URL}/claims`);
+            const res = await fetch(`${API_URL}/claims?session_id=${sessionId}`);
             const data = await res.json();
             setClaimHistory(data.claims || []);
         } catch {
@@ -490,22 +490,6 @@ const ResultsDisplay = ({ results, imageUrl, onReset }) => {
                             </div>
                         ))}
                     </div>
-                    {!historyLoading && claimHistory.length > 0 && (
-                        <div className="p-4 border-t border-gray-700">
-                            <button
-                                onClick={async () => {
-                                    if (!window.confirm('Clear all claim history? This cannot be undone.')) return;
-                                    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-                                    await fetch(`${API_URL}/claims`, { method: 'DELETE' });
-                                    setClaimHistory([]);
-                                }}
-                                className="w-full py-2 flex items-center justify-center gap-2 text-sm text-red-400 hover:text-red-300 border border-red-800/50 hover:border-red-700 rounded-xl transition-colors"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                Clear History
-                            </button>
-                        </div>
-                    )}
                 </div>
             </div>
         )}

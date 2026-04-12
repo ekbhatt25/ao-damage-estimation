@@ -7,6 +7,17 @@ import './App.css';
 import aoLogo from './Auto_Owners_Logo_full_circle.jpg';
 import aoTextLogo from './ao-text-logo.jpg';
 
+function getSessionId() {
+  let id = localStorage.getItem('ao_session_id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('ao_session_id', id);
+  }
+  return id;
+}
+
+const SESSION_ID = getSessionId();
+
 function App() {
   const [appState, setAppState] = useState('idle');
   const [image, setImage] = useState(null);
@@ -22,6 +33,7 @@ function App() {
 
     const formData = new FormData();
     formData.append('image', file);
+    formData.append('session_id', SESSION_ID);
 
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -98,7 +110,7 @@ function App() {
             )}
 
             {appState === 'complete' && (
-              <ResultsDisplay results={results} imageUrl={image} onReset={handleReset} />
+              <ResultsDisplay results={results} imageUrl={image} onReset={handleReset} sessionId={SESSION_ID} />
             )}
           </AnimatePresence>
         </main>
