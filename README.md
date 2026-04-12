@@ -11,7 +11,11 @@ pinned: false
 
 ## Description
 
-This project automates vehicle damage assessment for Auto-Owners Insurance using a multi-model computer vision, machine learning, and generative AI pipeline. A user uploads a photo of a damaged vehicle and the system identifies which parts are damaged, classifies the damage type and severity, estimates repair costs, and produces a straight-through processing (STP) eligibility decision. The frontend renders the uploaded image with color-coded bounding box overlays (yellow = minor, orange = moderate, red = severe) alongside part-level detections with confidence scores, severity ratings, per-part cost ranges, a natural language explanation, and fraud signal flags.
+This project automates vehicle damage assessment for Auto-Owners Insurance using a multi-model computer vision, machine learning, and generative AI pipeline. A user selects their state, uploads a photo of a damaged vehicle, and the system identifies which parts are damaged, classifies the damage type and severity, estimates repair costs using regional labor rates, and produces a straight-through processing (STP) eligibility decision.
+
+The frontend renders the uploaded image with color-coded bounding box overlays (yellow = minor, orange = moderate, red = severe) alongside part-level detections with confidence scores, severity ratings, per-part cost ranges, a natural language explanation, and fraud signal flags. After analysis, adjusters can change the state to instantly re-price all parts using that region's labor rates, or manually override individual part detections and costs.
+
+Session-based claim history is stored in an append-only audit log and accessible via a slide-in sidebar with CSV export.
 
 ## Models
 
@@ -23,7 +27,7 @@ This project automates vehicle damage assessment for Auto-Owners Insurance using
 | **GradientBoosting Regressor** | ML cost estimation — predicts repair cost from part, damage type, and severity |
 | **Gemini Flash** | LLM for natural language damage explanation and STP reasoning (rule-based fallback if API key unavailable) |
 
-Mask R-CNN was fine-tuned using two-phase transfer learning (frozen backbone → full fine-tuning) with AMP and gradient checkpointing. YOLOv8m was fine-tuned on a labeled vehicle damage dataset. The severity classifier is sourced from `nezahatkorkmaz/car-damage-level-detection-yolov8`. The cost model is trained on repair cost estimates cross-referenced against SCRS/ASA labor rate surveys.
+Mask R-CNN was fine-tuned using two-phase transfer learning (frozen backbone → full fine-tuning) with AMP and gradient checkpointing. YOLOv8m was fine-tuned on a labeled vehicle damage dataset. The severity classifier is sourced from `nezahatkorkmaz/car-damage-level-detection-yolov8`. The cost model is trained on repair cost estimates scaled by SCRS 2024 labor rate survey data (body $67/hr, paint $65/hr national medians; mechanical $95/hr).
 
 ## Computer Vision Pipeline
 
@@ -54,7 +58,7 @@ IoU / Mask Overlap Cross-Reference
     ▼
 Cost Estimation (GradientBoosting ML model)
     ├── Repair cost per part
-    ├── Regional labor rates — body / mechanical / paint (SCRS/ASA national averages)
+    ├── Regional labor rates by state — body / mechanical / paint (SCRS 2024 survey data)
     ├── Total cost range (±15% band)
     └── Total loss flag (repair cost > 70% of estimated ACV)
     │
@@ -64,8 +68,17 @@ Gemini Flash — natural language explanation + STP eligibility decision
     └── Auto-escalation to adjuster if confidence < 40% or total loss
     │
     ▼
-Audit Trail (JSONL) — claim ID, timestamp, model version, full decision log
+Audit Trail (JSONL) — claim ID, session ID, timestamp, model version, full decision log
 ```
+
+## Key Features
+
+- **State-based labor rates** — select a state before upload to apply SCRS 2024 regional rates; body rates range from ~$59/hr (Southeast) to ~$84/hr (West Coast)
+- **Live cost re-estimation** — change the state dropdown in the results panel to instantly re-price all detected parts without re-uploading
+- **Adjuster overrides** — edit any part's detection (part, damage type, severity) and get a backend-recalculated cost range; override takes priority over state adjustments
+- **Fraud signals** — three passive checks (pixel variance, EXIF editing software, duplicate hash) flagged on every submission
+- **Session claim history** — each browser session has a unique ID; all claims for the session are viewable in a slide-in sidebar and exportable as CSV
+- **Append-only audit log** — every claim is logged with full model inputs/outputs for compliance review
 
 ## Installation & Getting Started
 
@@ -134,15 +147,15 @@ git push space main
 ```
 ao-damage-estimation/
 ├── backend/
-│   ├── api.py              # FastAPI REST API — POST /detect endpoint
+│   ├── api.py              # FastAPI REST API — /detect, /estimate, /claims endpoints
 │   ├── cv_detector.py      # CV wrapper: runs Mask R-CNN + YOLO, cross-references results
-│   ├── cost_estimator.py   # ML cost estimation (GradientBoosting) with labor rate adjustment
+│   ├── cost_estimator.py   # ML cost estimation (GradientBoosting) with state labor rate adjustment
 │   ├── llm_client.py       # Gemini integration: explanation generation + STP decision
 │   ├── audit_logger.py     # JSONL audit trail — one record per claim
 │   ├── fraud_detector.py   # Perceptual hash duplicate detection + EXIF metadata anomaly detection
 │   ├── data/
 │   │   ├── repair_costs.csv    # Part repair/replace costs
-│   │   └── labor_rates.csv     # Body/mechanical/paint rates by state
+│   │   └── labor_rates.csv     # Body/mechanical/paint rates by state (SCRS 2024)
 │   └── mask_rcnn/
 │       ├── config.py       # Hyperparameters, class labels, paths
 │       ├── model.py        # Mask R-CNN model factory
@@ -155,7 +168,7 @@ ao-damage-estimation/
 │   └── src/
 │       └── components/
 │           ├── ImageOverlay.js     # HTML5 Canvas bbox overlay, color-coded by severity
-│           ├── ResultsDisplay.js   # Full results panel — STP, cost, explanation, detections
+│           ├── ResultsDisplay.js   # Full results panel — STP, cost, state selector, overrides, history
 │           ├── ImageUpload.js      # Drag-and-drop image uploader
 │           └── LoadingOverlay.js   # Analysis loading state with cancel button
 ├── download_models.py      # Downloads model weights from HF Hub at build time
@@ -178,7 +191,7 @@ Weights are hosted on Hugging Face Hub at `eerabhatt/ao-damage-models` and pulle
 
 Upload a vehicle photo and receive structured damage detections, cost estimates, and STP decision.
 
-**Request:** `multipart/form-data` with `image` field
+**Request:** `multipart/form-data` with `image`, `state` (2-letter abbreviation, optional), and `session_id` fields
 
 **Response:**
 ```json
@@ -201,12 +214,13 @@ Upload a vehicle photo and receive structured damage detections, cost estimates,
         "severity": "moderate",
         "action": "repair",
         "labor_category": "body",
-        "labor_rate": 58.0,
+        "labor_rate": 67.0,
         "cost_range": [373, 505]
       }
     ],
     "total_cost_range": [373, 505],
-    "labor_rates": {"body": 58.0, "mechanical": 80.0, "paint": 52.0},
+    "state": "MI",
+    "labor_rates": {"body": 67.0, "mechanical": 95.0, "paint": 65.0},
     "acv_estimate": 20000,
     "total_loss": false
   },
@@ -219,9 +233,22 @@ Upload a vehicle photo and receive structured damage detections, cost estimates,
   "model_version": "1.0.0",
   "fraud_flags": [],
   "claim_id": "d4d22393-32b5-4720-afdd-44977b980943",
+  "state": "MI",
   "inference_ms": 842.3
 }
 ```
+
+### `GET /estimate`
+
+Returns a cost estimate for a single part. Used by the frontend adjuster override and live state re-pricing.
+
+**Query params:** `part`, `damage_type`, `severity`, `state` (optional)
+
+### `GET /claims`
+
+Returns claim history for a session from the audit log.
+
+**Query params:** `session_id`, `limit` (default 50)
 
 ### `GET /health`
 
@@ -229,10 +256,10 @@ Returns model load status and LLM availability.
 
 ## Technologies Used
 
-**Frontend:** React, Tailwind CSS, Framer Motion, HTML5 Canvas (bounding box overlay)  
+**Frontend:** React, Tailwind CSS, Framer Motion, HTML5 Canvas (bounding box overlay), Lucide React  
 **Backend:** FastAPI, Uvicorn  
 **Computer Vision:** PyTorch, Mask R-CNN (ResNet-50-FPN), YOLOv8m, YOLOv8n-cls (Ultralytics), OpenCV, NumPy, Pillow, torchvision, pycocotools  
-**Cost Estimation:** scikit-learn (GradientBoostingRegressor), joblib  
+**Cost Estimation:** scikit-learn (GradientBoostingRegressor), joblib, SCRS 2024 labor rate data  
 **LLM:** Gemini Flash, Google Generative AI SDK  
 **Deployment:** Docker, Hugging Face Spaces, Vercel, Hugging Face Hub
 
