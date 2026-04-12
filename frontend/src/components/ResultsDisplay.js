@@ -36,6 +36,18 @@ const PART_OPTIONS   = ["Back-bumper","Back-door","Back-wheel","Back-window","Ba
                          "Fender","Front-bumper","Front-door","Front-wheel","Front-window",
                          "Grille","Headlight","Hood","License-plate","Mirror",
                          "Quarter-panel","Rocker-panel","Roof","Tail-light","Trunk","Windshield"];
+const STATE_OPTIONS = [
+    ["AL","Alabama"],["AK","Alaska"],["AZ","Arizona"],["AR","Arkansas"],["CA","California"],
+    ["CO","Colorado"],["CT","Connecticut"],["DE","Delaware"],["FL","Florida"],["GA","Georgia"],
+    ["HI","Hawaii"],["ID","Idaho"],["IL","Illinois"],["IN","Indiana"],["IA","Iowa"],
+    ["KS","Kansas"],["KY","Kentucky"],["LA","Louisiana"],["ME","Maine"],["MD","Maryland"],
+    ["MA","Massachusetts"],["MI","Michigan"],["MN","Minnesota"],["MS","Mississippi"],["MO","Missouri"],
+    ["MT","Montana"],["NE","Nebraska"],["NV","Nevada"],["NH","New Hampshire"],["NJ","New Jersey"],
+    ["NM","New Mexico"],["NY","New York"],["NC","North Carolina"],["ND","North Dakota"],["OH","Ohio"],
+    ["OK","Oklahoma"],["OR","Oregon"],["PA","Pennsylvania"],["RI","Rhode Island"],["SC","South Carolina"],
+    ["SD","South Dakota"],["TN","Tennessee"],["TX","Texas"],["UT","Utah"],["VT","Vermont"],
+    ["VA","Virginia"],["WA","Washington"],["WV","West Virginia"],["WI","Wisconsin"],["WY","Wyoming"],
+];
 const DAMAGE_OPTIONS = ["Dent","Scratch","Crack","Glass Shatter","Lamp Broken","Tire Flat"];
 const SEV_OPTIONS    = ["minor","moderate","severe"];
 
@@ -69,6 +81,36 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
     const [showHistory,     setShowHistory]     = useState(false);
     const [claimHistory,    setClaimHistory]    = useState([]);
     const [historyLoading,  setHistoryLoading]  = useState(false);
+    const [selectedState,   setSelectedState]   = useState(results?.state || '');
+    const [stateCosts,      setStateCosts]      = useState({});   // idx → { cost_range, action }
+    const [stateLoading,    setStateLoading]    = useState(false);
+
+    const refetchAllCosts = async (newState) => {
+        if (!cost?.damaged_parts?.length) return;
+        setStateLoading(true);
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+        const newStateCosts = {};
+        await Promise.all(cost.damaged_parts.map(async (p, i) => {
+            const part        = overrides[i]?.part        ?? p.part;
+            const damage_type = overrides[i]?.damage_type ?? p.damage_type;
+            const severity    = overrides[i]?.severity    ?? p.severity ?? 'moderate';
+            try {
+                const res = await fetch(
+                    `${API_URL}/estimate?part=${encodeURIComponent(part)}&damage_type=${encodeURIComponent(damage_type)}&severity=${encodeURIComponent(severity)}&state=${newState}`
+                );
+                const data = await res.json();
+                newStateCosts[i] = { cost_range: data.cost_range, action: data.action };
+            } catch { /* keep original on failure */ }
+        }));
+        setStateCosts(newStateCosts);
+        setStateLoading(false);
+    };
+
+    const handleStateChange = (newState) => {
+        setSelectedState(newState);
+        if (newState) refetchAllCosts(newState);
+        else setStateCosts({});
+    };
 
     const openHistory = async () => {
         setShowHistory(true);
@@ -103,14 +145,16 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
         inference_ms,
     } = results;
 
-    // Effective cost range for a detection (override if present, else original)
+    // Effective cost range: adjuster override > state-adjusted > original AI
     const effectiveCost = (i) => {
-        if (overrides[i]) return overrides[i].cost_range;
+        if (overrides[i])  return overrides[i].cost_range;
+        if (stateCosts[i]) return stateCosts[i].cost_range;
         return cost?.damaged_parts?.[i]?.cost_range ?? null;
     };
 
     const effectiveAction = (i) => {
-        if (overrides[i]) return overrides[i].action;
+        if (overrides[i])  return overrides[i].action;
+        if (stateCosts[i]) return stateCosts[i].action;
         return cost?.damaged_parts?.[i]?.action ?? null;
     };
 
@@ -140,7 +184,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
         const { part, damage_type, severity } = pendingEdit;
         try {
             const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-            const st = results?.state || '';
+            const st = selectedState || results?.state || '';
             const res = await fetch(
                 `${API_URL}/estimate?part=${encodeURIComponent(part)}&damage_type=${encodeURIComponent(damage_type)}&severity=${encodeURIComponent(severity)}&state=${st}`
             );
@@ -249,6 +293,24 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                     </div>
                 )}
 
+                {/* State selector — re-prices all parts by regional labor rates */}
+                {cost?.damaged_parts?.length > 0 && (
+                    <div className="flex items-center gap-3 p-3 bg-gray-900/50 rounded-xl border border-gray-700">
+                        <label className="text-xs font-medium text-gray-400 whitespace-nowrap">Estimate by state</label>
+                        <select
+                            value={selectedState}
+                            onChange={e => handleStateChange(e.target.value)}
+                            className="flex-1 bg-gray-800 border border-gray-600 text-white text-sm rounded-lg px-2 py-1"
+                        >
+                            <option value="">— national average —</option>
+                            {STATE_OPTIONS.map(([abbr, name]) => (
+                                <option key={abbr} value={abbr}>{name} ({abbr})</option>
+                            ))}
+                        </select>
+                        {stateLoading && <span className="text-xs text-gray-400 animate-pulse whitespace-nowrap">Updating…</span>}
+                    </div>
+                )}
+
                 {/* Cost + Confidence */}
                 {(cost || confidence_score != null) && (
                     <div className="grid grid-cols-2 gap-4">
@@ -258,11 +320,13 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                                 <p className="text-white font-bold text-lg mt-1">
                                     ${fmt(displayTotal[0])} – ${fmt(displayTotal[1])}
                                 </p>
-                                {Object.keys(overrides).length > 0 && (
+                                {(Object.keys(overrides).length > 0 || Object.keys(stateCosts).length > 0) && (
                                     <div className="flex items-center justify-between mt-1">
-                                        <p className="text-orange-400 text-xs">Adjuster adjusted</p>
+                                        <p className="text-orange-400 text-xs">
+                                            {Object.keys(overrides).length > 0 ? 'Adjuster adjusted' : `Rates: ${selectedState}`}
+                                        </p>
                                         <button
-                                            onClick={() => setOverrides({})}
+                                            onClick={() => { setOverrides({}); setStateCosts({}); }}
                                             className="text-xs text-gray-400 hover:text-white flex items-center gap-1 transition-colors"
                                             title="Reset all overrides to original AI estimates"
                                         >
