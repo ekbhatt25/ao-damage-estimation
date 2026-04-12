@@ -490,6 +490,16 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                             </div>
                         ))}
                     </div>
+                    {!historyLoading && claimHistory.length > 0 && (
+                        <div className="p-4 border-t border-gray-700">
+                            <button
+                                onClick={() => setClaimHistory([])}
+                                className="w-full py-2 flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 rounded-xl transition-colors"
+                            >
+                                Clear view (demo only — audit log preserved)
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         )}
