@@ -22,6 +22,7 @@ function App() {
   const [appState, setAppState] = useState('idle');
   const [image, setImage] = useState(null);
   const [results, setResults] = useState(null);
+  const [zipCode, setZipCode] = useState('');
   const abortControllerRef = React.useRef(null);
 
   const handleUpload = async (file) => {
@@ -34,6 +35,7 @@ function App() {
     const formData = new FormData();
     formData.append('image', file);
     formData.append('session_id', SESSION_ID);
+    formData.append('zipCode', zipCode);
 
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -101,6 +103,19 @@ function App() {
                   </p>
                 </div>
 
+                <div className="flex justify-center mb-6">
+                  <div className="flex items-center gap-3 bg-white/10 border border-gray-600 rounded-xl px-4 py-3">
+                    <label className="text-black text-sm font-medium whitespace-nowrap">ZIP Code (optional)</label>
+                    <input
+                      type="text"
+                      maxLength={5}
+                      value={zipCode}
+                      onChange={e => setZipCode(e.target.value.replace(/\D/g, ''))}
+                      placeholder="e.g. 48823"
+                      className="bg-transparent text-black placeholder-gray-400 text-sm w-24 outline-none border-b border-gray-500 focus:border-white pb-0.5"
+                    />
+                  </div>
+                </div>
                 <ImageUpload onUpload={handleUpload} />
               </motion.div>
             )}

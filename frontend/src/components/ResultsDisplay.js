@@ -138,7 +138,6 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
 
     const applyEdit = async (i) => {
         const { part, damage_type, severity } = pendingEdit;
-        setEditingIdx(null);
         try {
             const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
             const zip = results?.cost?.zip_code || '';
@@ -148,10 +147,10 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
             const data = await res.json();
             setOverrides(prev => ({ ...prev, [i]: { part, damage_type, severity, cost_range: data.cost_range, action: data.action } }));
         } catch {
-            // Fall back to client-side estimate if backend unreachable
             const { cost_range, action } = calcCost(part, damage_type, severity);
             setOverrides(prev => ({ ...prev, [i]: { part, damage_type, severity, cost_range, action } }));
         }
+        setEditingIdx(null);
     };
 
     const cancelEdit = () => setEditingIdx(null);
