@@ -109,10 +109,6 @@ def quality_gate(img: Image.Image) -> QualityReport:
     if max(channel_stds) < 15.0:
         fraud_flags.append("low_pixel_variance (possible screenshot or solid fill)")
 
-    # Professionally sharp + high-res — real damage photos taken on phones are rarely this crisp
-    if w * h > 500_000 and b_score > 500:
-        fraud_flags.append("unusually_sharp_for_damage_photo (possible stock image)")
-
     return QualityReport(
         passed=len(issues) == 0,
         blur=b_score,
