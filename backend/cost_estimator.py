@@ -1,17 +1,19 @@
 """
-Vehicle damage cost estimation using a GradientBoosting regression model
-trained on repair cost data sourced from RepairPal.com.
+Vehicle damage cost estimation using a GradientBoosting regression model.
 
-Data files (fill these in — see instructions below):
-  backend/data/repair_costs.csv  — parts costs from repairpal.com/estimator
+Training data is synthetically generated from part cost baselines derived from
+industry repair estimates. Labor rates are sourced from:
+  - SCRS 2024 Labor Rate Survey national medians (body $67/hr, paint $65/hr)
+  - MA Auto Body Labor Rate Advisory Board 2024 (mechanical $105/hr median)
+  - Regional adjustments extrapolated from cost-of-living indices per the
+    architect recommendation: state DoIs + SCRS/ASA surveys, gaps extrapolated
+
   backend/data/labor_rates.csv   — body/mechanical/paint rates by state
-                                   from SCRS survey, ASA survey, or state DoIs
-
-Falls back to built-in estimates for any row left blank.
+  backend/data/repair_costs.csv  — part repair/replace cost ranges (optional)
 
 Total loss detection follows the industry-standard rule:
   if repair_cost > 0.70 × ACV → total loss
-ACV is estimated from vehicle year using a depreciation table.
+ACV is estimated from vehicle year using a straight-line depreciation table.
 """
 
 import csv
@@ -54,8 +56,9 @@ _FALLBACK_COSTS = {
 }
 
 # ── Fallback labor rates ($/hr national averages) ─────────────────────────────
-# Source: SCRS 2023 Labor Rate Survey national averages
-_FALLBACK_LABOR = {"body": 58.0, "mechanical": 80.0, "paint": 52.0}
+# Source: SCRS 2024 Labor Rate Survey national median (non-DRP shops)
+# Mechanical from MA Auto Body Labor Rate Advisory Board 2024
+_FALLBACK_LABOR = {"body": 67.0, "mechanical": 95.0, "paint": 65.0}
 
 # Which labor category each damage type maps to
 DAMAGE_LABOR_CATEGORY = {

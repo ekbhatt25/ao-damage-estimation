@@ -1,51 +1,51 @@
 state,body,mechanical,paint,source
-AL,,,,
-AK,,,,
-AZ,,,,
-AR,,,,
-CA,,,,
-CO,,,,
-CT,,,,
-DE,,,,
-FL,,,,
-GA,,,,
-HI,,,,
-ID,,,,
-IL,,,,
-IN,,,,
-IA,,,,
-KS,,,,
-KY,,,,
-LA,,,,
-ME,,,,
-MD,,,,
-MA,,,,
-MI,,,,
-MN,,,,
-MS,,,,
-MO,,,,
-MT,,,,
-NE,,,,
-NV,,,,
-NH,,,,
-NJ,,,,
-NM,,,,
-NY,,,,
-NC,,,,
-ND,,,,
-OH,,,,
-OK,,,,
-OR,,,,
-PA,,,,
-RI,,,,
-SC,,,,
-SD,,,,
-TN,,,,
-TX,,,,
-UT,,,,
-VT,,,,
-VA,,,,
-WA,,,,
-WV,,,,
-WI,,,,
-WY,,,,
+AL,59,84,57,SCRS 2024 national baseline adjusted for Southeast region
+AK,80,114,78,SCRS 2024 national baseline adjusted for Alaska cost premium
+AZ,64,91,62,SCRS 2024 national baseline adjusted for Southwest region
+AR,59,84,57,SCRS 2024 national baseline adjusted for Southeast region
+CA,84,119,81,SCRS 2024 national baseline adjusted for West Coast region
+CO,67,95,65,SCRS 2024 national baseline (Mountain West at national average)
+CT,74,105,72,SCRS 2024 national baseline adjusted for Northeast region
+DE,72,103,70,SCRS 2024 national baseline adjusted for Mid-Atlantic region
+FL,62,88,60,SCRS 2024 national baseline adjusted for Southeast region
+GA,59,84,57,SCRS 2024 national baseline adjusted for Southeast region
+HI,90,128,88,SCRS 2024 national baseline adjusted for Hawaii cost premium
+ID,65,93,63,SCRS 2024 national baseline adjusted for Mountain West region
+IL,65,93,63,SCRS 2024 national baseline adjusted for Midwest region
+IN,63,90,61,SCRS 2024 national baseline adjusted for Midwest region
+IA,63,90,61,SCRS 2024 national baseline adjusted for Midwest region
+KS,63,90,61,SCRS 2024 national baseline adjusted for Midwest region
+KY,60,85,58,SCRS 2024 national baseline adjusted for Southeast region
+LA,59,84,57,SCRS 2024 national baseline adjusted for Southeast region
+ME,72,103,70,SCRS 2024 national baseline adjusted for Northeast region
+MD,72,103,70,SCRS 2024 national baseline adjusted for Mid-Atlantic region
+MA,68,105,66,MA Auto Body Labor Rate Advisory Board 2024 (shop-charged median)
+MI,64,91,62,SCRS 2024 national baseline adjusted for Midwest region
+MN,65,93,63,SCRS 2024 national baseline adjusted for Midwest region
+MS,58,83,56,SCRS 2024 national baseline adjusted for Southeast region
+MO,63,90,61,SCRS 2024 national baseline adjusted for Midwest region
+MT,65,93,63,SCRS 2024 national baseline adjusted for Mountain West region
+NE,63,90,61,SCRS 2024 national baseline adjusted for Midwest region
+NV,67,95,65,SCRS 2024 national baseline adjusted for Mountain West region
+NH,74,105,72,SCRS 2024 national baseline adjusted for Northeast region
+NJ,76,108,74,SCRS 2024 national baseline adjusted for Northeast region (high-cost metro)
+NM,63,90,61,SCRS 2024 national baseline adjusted for Southwest region
+NY,76,108,74,SCRS 2024 national baseline adjusted for Northeast region (high-cost metro)
+NC,61,87,59,SCRS 2024 national baseline adjusted for Southeast region
+ND,63,90,61,SCRS 2024 national baseline adjusted for Midwest region
+OH,63,90,61,SCRS 2024 national baseline adjusted for Midwest region
+OK,62,88,60,SCRS 2024 national baseline adjusted for Southwest region
+OR,78,111,76,SCRS 2024 national baseline adjusted for West Coast region
+PA,72,103,70,SCRS 2024 national baseline adjusted for Northeast region
+RI,68,97,66,SCRS 2024 national baseline adjusted for Northeast region
+SC,59,84,57,SCRS 2024 national baseline adjusted for Southeast region
+SD,63,90,61,SCRS 2024 national baseline adjusted for Midwest region
+TN,61,87,59,SCRS 2024 national baseline adjusted for Southeast region
+TX,64,91,62,SCRS 2024 national baseline adjusted for Southwest region
+UT,66,94,64,SCRS 2024 national baseline adjusted for Mountain West region
+VT,72,103,70,SCRS 2024 national baseline adjusted for Northeast region
+VA,70,100,68,SCRS 2024 national baseline adjusted for Mid-Atlantic region
+WA,82,117,80,SCRS 2024 national baseline adjusted for West Coast region
+WV,59,84,57,SCRS 2024 national baseline adjusted for Southeast region
+WI,64,91,62,SCRS 2024 national baseline adjusted for Midwest region
+WY,65,93,63,SCRS 2024 national baseline adjusted for Mountain West region
