@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir \
     fastapi "uvicorn[standard]" python-multipart \
     pillow numpy opencv-python-headless pycocotools \
     huggingface_hub ultralytics scikit-learn joblib \
-    google-generativeai python-dotenv
+    google-genai python-dotenv
 
 # PyTorch CPU — HF Spaces free tier has no GPU
 RUN pip install --no-cache-dir \
