@@ -127,25 +127,23 @@ class LLMClient:
         labor_rates = cost_output.get('labor_rates', {})
         labor_note  = f"body: ${labor_rates.get('body', 58)}/hr" if labor_rates else "national average rates"
 
-        prompt = f"""You are an auto insurance AI assistant. Generate a professional, customer-friendly claim explanation.
-
-VEHICLE: {vehicle_info['year']} {vehicle_info['make']} {vehicle_info['model']}
+        prompt = f"""You are an auto insurance AI assistant. Generate a concise, professional claim explanation.
 
 DAMAGE ASSESSMENT:
 {chr(10).join(parts_summary)}
 
 TOTAL ESTIMATED COST: ${cost_output['total_cost_range'][0]}-${cost_output['total_cost_range'][1]}
 
-LOCATION: {cost_output.get('state', 'Unknown')} ({labor_note})
+LOCATION: {location_note}
 
-Write a professional 2-3 sentence explanation for the customer that:
-1. Clearly describes what damage was found
-2. Explains the repair approach (repair vs replace)
-3. Mentions the cost estimate
-4. Is reassuring and professional in tone
-5. Avoids technical jargon
+Rules:
+- Refer to "the vehicle" only — never mention a year, make, or model
+- Use the exact damage types listed above (e.g. if it says "Glass shatter", say glass shatter — not dent)
+- Write exactly 2 sentences: one describing the damage and repair approach, one stating the cost estimate
+- End after stating the cost — do not add next steps, reassurances, or follow-up offers
+- Be professional and concise
 
-Return ONLY the explanation text. No JSON, no extra formatting, no preamble."""
+Return ONLY the 2-sentence explanation. No JSON, no extra formatting, no preamble."""
 
         try:
             response = self.client.models.generate_content(
