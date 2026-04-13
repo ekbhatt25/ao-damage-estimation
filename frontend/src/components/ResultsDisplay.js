@@ -86,6 +86,9 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
     const [stateCosts,      setStateCosts]      = useState({});   // idx → { cost_range, action }
     const [stateLoading,    setStateLoading]    = useState(false);
     const [removedIdxs,     setRemovedIdxs]     = useState(new Set());
+    const [addedParts,      setAddedParts]      = useState([]);   // [{part, damage_type, severity, cost_range, action}]
+    const [editingAddedIdx, setEditingAddedIdx] = useState(null);
+    const [pendingAddedEdit,setPendingAddedEdit]= useState({});
 
     const refetchAllCosts = async (newState) => {
         if (!cost?.damaged_parts?.length) return;
@@ -161,13 +164,16 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
         return cost?.damaged_parts?.[i]?.action ?? null;
     };
 
-    // Recalculate total from all effective per-part costs
+    // Recalculate total from all effective per-part costs + adjuster-added parts
     const overriddenTotal = (() => {
-        if (!cost?.damaged_parts?.length) return null;
+        if (!cost?.damaged_parts?.length && !addedParts.length) return null;
         let lo = 0, hi = 0;
-        cost.damaged_parts.forEach((_, i) => {
+        cost.damaged_parts?.forEach((_, i) => {
             const r = effectiveCost(i);
             if (r) { lo += r[0]; hi += r[1]; }
+        });
+        addedParts.forEach(p => {
+            if (p.cost_range) { lo += p.cost_range[0]; hi += p.cost_range[1]; }
         });
         return [lo, hi];
     })();
@@ -201,6 +207,32 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
     };
 
     const cancelEdit = () => setEditingIdx(null);
+
+    const startAddPart = () => {
+        const defaults = { part: "Front-bumper", damage_type: "Dent", severity: "moderate" };
+        setAddedParts(prev => [...prev, { ...defaults, cost_range: null, action: null }]);
+        setEditingAddedIdx(addedParts.length);
+        setPendingAddedEdit(defaults);
+    };
+
+    const applyAddedEdit = async (idx) => {
+        const { part, damage_type, severity } = pendingAddedEdit;
+        try {
+            const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+            const st = selectedState || results?.state || '';
+            const res = await fetch(
+                `${API_URL}/estimate?part=${encodeURIComponent(part)}&damage_type=${encodeURIComponent(damage_type)}&severity=${encodeURIComponent(severity)}&state=${st}`
+            );
+            const data = await res.json();
+            setAddedParts(prev => prev.map((p, i) => i === idx ? { part, damage_type, severity, cost_range: data.cost_range, action: data.action } : p));
+        } catch {
+            const { cost_range, action } = calcCost(part, damage_type, severity);
+            setAddedParts(prev => prev.map((p, i) => i === idx ? { part, damage_type, severity, cost_range, action } : p));
+        }
+        setEditingAddedIdx(null);
+    };
+
+    const removeAddedPart = (idx) => setAddedParts(prev => prev.filter((_, i) => i !== idx));
 
     const resetOverride = (i) => {
         setOverrides(prev => { const next = { ...prev }; delete next[i]; return next; });
@@ -338,7 +370,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                                             {Object.keys(overrides).length > 0 ? 'Adjuster adjusted' : `Rates: ${selectedState}`}
                                         </p>
                                         <button
-                                            onClick={() => { setOverrides({}); setStateCosts({}); setRemovedIdxs(new Set()); }}
+                                            onClick={() => { setOverrides({}); setStateCosts({}); setRemovedIdxs(new Set()); setAddedParts([]); }}
                                             className="text-xs text-gray-400 hover:text-white flex items-center gap-1 transition-colors"
                                             title="Reset all overrides to original AI estimates"
                                         >
@@ -483,6 +515,73 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                     );
                 })}
 
+
+                {/* Adjuster-added parts */}
+                {addedParts.map((added, idx) => {
+                    const isEditingAdded = editingAddedIdx === idx;
+                    return (
+                        <div key={`added-${idx}`} className="p-4 bg-gray-900/50 rounded-xl border border-blue-700/60 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-white font-medium text-sm">Added Part {idx + 1}</span>
+                                    <span className="text-xs text-blue-400 bg-blue-900/40 px-2 py-0.5 rounded-full">Added by adjuster</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    {isEditingAdded ? (
+                                        <>
+                                            <button onClick={() => applyAddedEdit(idx)} className="text-green-400 hover:text-green-300 transition-colors" title="Apply"><Check className="w-4 h-4" /></button>
+                                            <button onClick={() => setEditingAddedIdx(null)} className="text-red-400 hover:text-red-300 transition-colors" title="Cancel"><X className="w-4 h-4" /></button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <button onClick={() => { setEditingAddedIdx(idx); setPendingAddedEdit({ part: added.part, damage_type: added.damage_type, severity: added.severity }); }} className="text-gray-400 hover:text-white transition-colors" title="Edit"><Pencil className="w-4 h-4" /></button>
+                                            <button onClick={() => removeAddedPart(idx)} className="text-gray-400 hover:text-red-400 transition-colors" title="Remove"><Trash2 className="w-4 h-4" /></button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-gray-400">Part</label>
+                                    {isEditingAdded
+                                        ? <select value={pendingAddedEdit.part} onChange={e => setPendingAddedEdit(p => ({ ...p, part: e.target.value }))} className="w-full bg-gray-800 border border-gray-600 text-white text-sm rounded-lg px-2 py-1">
+                                            {PART_OPTIONS.map(p => <option key={p}>{p}</option>)}
+                                          </select>
+                                        : <p className="text-white font-medium">{added.part}</p>}
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-gray-400">Damage Type</label>
+                                    {isEditingAdded
+                                        ? <select value={pendingAddedEdit.damage_type} onChange={e => setPendingAddedEdit(p => ({ ...p, damage_type: e.target.value }))} className="w-full bg-gray-800 border border-gray-600 text-white text-sm rounded-lg px-2 py-1">
+                                            {DAMAGE_OPTIONS.map(d => <option key={d}>{d}</option>)}
+                                          </select>
+                                        : <p className="text-white font-medium">{added.damage_type}</p>}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-gray-400">Severity</label>
+                                    {isEditingAdded
+                                        ? <select value={pendingAddedEdit.severity} onChange={e => setPendingAddedEdit(p => ({ ...p, severity: e.target.value }))} className="w-full bg-gray-800 border border-gray-600 text-white text-sm rounded-lg px-2 py-1">
+                                            {SEV_OPTIONS.map(s => <option key={s} value={s}>{SEV_LABELS[s]}</option>)}
+                                          </select>
+                                        : <div className="flex items-center gap-2"><span className="text-white capitalize">{added.severity}</span><div className="flex gap-1">{severityDots(added.severity)}</div></div>}
+                                </div>
+                                {added.cost_range && (
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-gray-400">Part Cost Range</label>
+                                        <p className="text-white text-sm">${fmt(added.cost_range[0])} – ${fmt(added.cost_range[1])}{added.action && <span className="text-gray-400 ml-2">({added.action})</span>}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+
+                {/* Add Part button */}
+                <button onClick={startAddPart} className="w-full py-2 border border-dashed border-gray-600 hover:border-blue-500 text-gray-400 hover:text-blue-400 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+                    + Add Part
+                </button>
 
                 <div className="pt-2 border-t border-gray-700 space-y-3">
                     <button onClick={onReset}
