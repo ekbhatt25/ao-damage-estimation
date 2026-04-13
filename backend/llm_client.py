@@ -1,25 +1,26 @@
 """
 LLM Integration - Sprint 3
-Gemini 3 Flash with all 4 requirements
+Gemini 2.5 Flash with all 4 requirements
 """
 
-import google.generativeai as genai
+from google import genai
 import json
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
+MODEL = 'gemini-2.5-flash'
+
 class LLMClient:
     def __init__(self):
         """Initialize Gemini client"""
-        
+
         api_key = os.getenv('GEMINI_API_KEY')
         if not api_key:
             raise ValueError("GEMINI_API_KEY not found in .env file")
-        
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+
+        self.client = genai.Client(api_key=api_key)
     
     def process_claim(self, cv_output, cost_output, vehicle_info):
         """Main LLM processing function"""
@@ -135,7 +136,7 @@ DAMAGE ASSESSMENT:
 
 TOTAL ESTIMATED COST: ${cost_output['total_cost_range'][0]}-${cost_output['total_cost_range'][1]}
 
-LOCATION: ZIP {cost_output['zip_code']} ({labor_note})
+LOCATION: {cost_output.get('state', 'Unknown')} ({labor_note})
 
 Write a professional 2-3 sentence explanation for the customer that:
 1. Clearly describes what damage was found
@@ -147,11 +148,12 @@ Write a professional 2-3 sentence explanation for the customer that:
 Return ONLY the explanation text. No JSON, no extra formatting, no preamble."""
 
         try:
-            response = self.model.generate_content(
-                prompt,
-                generation_config={"temperature": 0.3}
+            response = self.client.models.generate_content(
+                model=MODEL,
+                contents=prompt,
+                config={"temperature": 0.3},
             )
-            
+
             return response.text.strip()
             
         except Exception as e:
