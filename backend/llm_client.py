@@ -160,8 +160,7 @@ Return ONLY the explanation text. No JSON, no extra formatting, no preamble."""
             print(f"Warning: Gemini API error: {e}")
             parts_list = ", ".join([p['part'] for p in cost_output['damaged_parts']])
             return (
-                f"Your {vehicle_info['year']} {vehicle_info['make']} {vehicle_info['model']} "
-                f"has sustained damage to the following parts: {parts_list}. "
+                f"This vehicle has sustained damage to the following parts: {parts_list}. "
                 f"Based on our assessment, the estimated repair cost is "
                 f"${cost_output['total_cost_range'][0]}-${cost_output['total_cost_range'][1]}."
             )
