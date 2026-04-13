@@ -243,39 +243,32 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-4xl mx-auto bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl overflow-hidden shadow-2xl"
+            className="w-full max-w-2xl mx-auto bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl overflow-hidden shadow-2xl"
         >
             {/* Header */}
             <div className="p-8 border-b border-gray-700 bg-gradient-to-r from-blue-900/20 to-purple-900/20">
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                         {error ? <AlertCircle className="w-8 h-8 text-red-400" /> : <CheckCircle className="w-8 h-8 text-green-400" />}
-                        <h2 className={`text-2xl font-bold ${error ? 'text-red-400' : 'text-white'}`}>
-                            {error ? 'Analysis Error' : 'Analysis Complete'}
-                        </h2>
+                        <h2 className="text-2xl font-bold text-white">Analysis Complete</h2>
                     </div>
-                    <div className="flex items-center gap-4">
-                        {claim_id && (
-                            <div className="relative">
-                                <button onClick={() => setShowClaimRecord(v => !v)}
-                                    className="text-gray-400 hover:text-white transition-colors"
-                                    title="Claim record">
-                                    <Info className="w-5 h-5" />
-                                </button>
-                                {showClaimRecord && (
-                                    <div className="absolute right-0 top-7 z-20 w-64 p-3 bg-gray-900 border border-gray-700 rounded-xl shadow-xl text-xs text-gray-400 space-y-1">
-                                        <p className="font-medium text-gray-300">Claim Record</p>
-                                        <p>ID: <span className="text-gray-200 font-mono break-all">{claim_id}</span></p>
-                                        {model_version && <p>Model: <span className="text-gray-200">v{model_version}</span></p>}
-                                        {inference_ms != null && <p>Analyzed in: <span className="text-gray-200">{inference_ms}ms</span></p>}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                        <button onClick={onReset} className="text-gray-400 hover:text-white transition-colors" title="Close">
-                            <X className="w-6 h-6" />
-                        </button>
-                    </div>
+                    {claim_id && (
+                        <div className="relative">
+                            <button onClick={() => setShowClaimRecord(v => !v)}
+                                className="text-gray-400 hover:text-white transition-colors"
+                                title="Claim record">
+                                <Info className="w-5 h-5" />
+                            </button>
+                            {showClaimRecord && (
+                                <div className="absolute right-0 top-7 z-20 w-64 p-3 bg-gray-900 border border-gray-700 rounded-xl shadow-xl text-xs text-gray-400 space-y-1">
+                                    <p className="font-medium text-gray-300">Claim Record</p>
+                                    <p>ID: <span className="text-gray-200 font-mono break-all">{claim_id}</span></p>
+                                    {model_version && <p>Model: <span className="text-gray-200">v{model_version}</span></p>}
+                                    {inference_ms != null && <p>Analyzed in: <span className="text-gray-200">{inference_ms}ms</span></p>}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
                 {error
                     ? <p className="text-red-400 ml-11">{error}</p>
@@ -412,21 +405,19 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                 )}
 
                 {/* Detection cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {detections.map((det, i) => {
-                        const isEditing  = editingIdx === i;
-                        const isOverride = !!overrides[i];
-                        const dispPart   = isEditing ? pendingEdit.part        : (overrides[i]?.part        ?? det.part);
-                        const dispDmg    = isEditing ? pendingEdit.damage_type : (overrides[i]?.damage_type ?? det.damage_type);
-                        const dispSev    = isEditing ? pendingEdit.severity    : (overrides[i]?.severity    ?? det.severity ?? "moderate");
-                        const partCost   = effectiveCost(i);
-                        const partAction = effectiveAction(i);
-                        const isLastOdd  = detections.length % 2 !== 0 && i === detections.length - 1;
+                {detections.map((det, i) => {
+                    const isEditing  = editingIdx === i;
+                    const isOverride = !!overrides[i];
+                    const dispPart   = isEditing ? pendingEdit.part        : (overrides[i]?.part        ?? det.part);
+                    const dispDmg    = isEditing ? pendingEdit.damage_type : (overrides[i]?.damage_type ?? det.damage_type);
+                    const dispSev    = isEditing ? pendingEdit.severity    : (overrides[i]?.severity    ?? det.severity ?? "moderate");
+                    const partCost   = effectiveCost(i);
+                    const partAction = effectiveAction(i);
 
-                        const isRemoved = removedIdxs.has(i);
+                    const isRemoved = removedIdxs.has(i);
 
-                        return (
-                            <div key={i} className={`p-4 bg-gray-900/50 rounded-xl border space-y-3 ${isRemoved ? 'border-red-900/40 opacity-50' : isOverride ? 'border-orange-700/60' : 'border-gray-700'} ${isLastOdd ? 'md:col-span-2 md:w-[calc(50%-0.5rem)] md:mx-auto w-full' : ''}`}>
+                    return (
+                        <div key={i} className={`p-4 bg-gray-900/50 rounded-xl border space-y-3 ${isRemoved ? 'border-red-900/40 opacity-50' : isOverride ? 'border-orange-700/60' : 'border-gray-700'}`}>
 
                             {/* Card header */}
                             <div className="flex items-center justify-between">
@@ -523,7 +514,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                         </div>
                     );
                 })}
-                </div>
+
 
                 {/* Adjuster-added parts */}
                 {addedParts.map((added, idx) => {
@@ -588,25 +579,21 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                 })}
 
                 {/* Add Part button */}
-                {!error && (
-                    <button onClick={startAddPart} className="w-full py-2 border border-dashed border-gray-600 hover:border-blue-500 text-gray-400 hover:text-blue-400 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-                        + Add Part
-                    </button>
-                )}
+                <button onClick={startAddPart} className="w-full py-2 border border-dashed border-black hover:border-blue-500 text-black hover:text-blue-400 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+                    + Add Part
+                </button>
 
                 <div className="pt-2 border-t border-gray-700 space-y-3">
                     <button onClick={onReset}
                         className="w-full py-4 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
-                        {error ? <X className="w-5 h-5" /> : <RefreshCw className="w-5 h-5" />}
-                        {error ? "Dismiss & Go Back" : "Analyze Another Image"}
+                        <RefreshCw className="w-5 h-5" />
+                        Analyze Another Image
                     </button>
-                    {!error && (
-                        <button onClick={openHistory}
-                            className="w-full py-4 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
-                            <History className="w-5 h-5" />
-                            View Claim History
-                        </button>
-                    )}
+                    <button onClick={openHistory}
+                        className="w-full py-4 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
+                        <History className="w-5 h-5" />
+                        View Claim History
+                    </button>
                 </div>
             </div>
         </motion.div>
