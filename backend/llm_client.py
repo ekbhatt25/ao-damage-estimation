@@ -126,6 +126,8 @@ class LLMClient:
         
         labor_rates = cost_output.get('labor_rates', {})
         labor_note  = f"body: ${labor_rates.get('body', 58)}/hr" if labor_rates else "national average rates"
+        state = cost_output.get('state', '')
+        location_note = f"state of {state} ({labor_note})" if state else f"national average rates ({labor_note})"
 
         prompt = f"""You are an auto insurance AI assistant. Generate a concise, professional claim explanation.
 

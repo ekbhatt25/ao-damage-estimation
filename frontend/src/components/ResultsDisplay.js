@@ -579,7 +579,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                 })}
 
                 {/* Add Part button */}
-                <button onClick={startAddPart} className="w-full py-2 border border-dashed border-black hover:border-blue-500 text-black hover:text-blue-400 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+                <button onClick={startAddPart} className="w-full py-2 bg-white border border-dashed border-black hover:border-blue-500 text-black hover:text-blue-400 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
                     + Add Part
                 </button>
 
