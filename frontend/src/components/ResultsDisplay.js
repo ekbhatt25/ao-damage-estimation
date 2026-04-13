@@ -247,7 +247,12 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
 
                 {/* Image overlay */}
                 {imageUrl && detections.length > 0 && (
-                    <ImageOverlay imageUrl={imageUrl} detections={detections} />
+                    <ImageOverlay imageUrl={imageUrl} detections={detections.map((det, i) => ({
+                        ...det,
+                        severity: overrides[i]?.severity ?? det.severity,
+                        part:     overrides[i]?.part        ?? det.part,
+                        damage_type: overrides[i]?.damage_type ?? det.damage_type,
+                    }))} />
                 )}
 
                 {/* Fraud Flags */}
