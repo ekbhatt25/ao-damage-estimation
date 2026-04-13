@@ -395,7 +395,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                 {/* Explanation */}
                 {explanation && (
                     <div className="p-4 bg-gray-900/50 rounded-xl border border-gray-700">
-                        <label className="text-xs font-medium text-gray-400 block mb-2">Our Assessment</label>
+                        <label className="text-xs font-medium text-gray-400 block mb-2">AI Assessment</label>
                         <p className="text-gray-300 text-sm leading-relaxed">{explanation}</p>
                     </div>
                 )}
