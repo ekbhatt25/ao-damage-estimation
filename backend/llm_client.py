@@ -111,7 +111,7 @@ class LLMClient:
         parts_summary = []
         for p in cost_output['damaged_parts']:
             parts_summary.append(
-                f"{p['part']}: {p['damage_type']} ({p['severity']}) - "
+                f"{p['part'].lower()}: {p['damage_type'].lower()} ({p['severity']}) - "
                 f"${p['cost_range'][0]}-${p['cost_range'][1]} to {p['action']}"
             )
         
@@ -131,10 +131,10 @@ LOCATION: {location_note}
 
 Rules:
 - Refer to "the vehicle" only — never mention a year, make, or model
-- Use the exact damage types listed above (e.g. if it says "Glass shatter", say glass shatter — not dent)
+- Copy damage types and part names word-for-word from the DAMAGE ASSESSMENT above — do NOT substitute, paraphrase, or default to "dent"
+- All part names and damage types are already lowercase — keep them lowercase mid-sentence
 - Write exactly 2 sentences: one describing the damage and repair approach, one stating the cost estimate
 - End after stating the cost — do not add next steps, reassurances, or follow-up offers
-- Be professional and concise
 
 Return ONLY the 2-sentence explanation. No JSON, no extra formatting, no preamble."""
 
@@ -149,7 +149,7 @@ Return ONLY the 2-sentence explanation. No JSON, no extra formatting, no preambl
             
         except Exception as e:
             print(f"Warning: Gemini API error: {e}")
-            parts_list = ", ".join([p['part'] for p in cost_output['damaged_parts']])
+            parts_list = ", ".join([p['part'].lower() for p in cost_output['damaged_parts']])
             return (
                 f"This vehicle has sustained damage to the following parts: {parts_list}. "
                 f"Based on our assessment, the estimated repair cost is "
