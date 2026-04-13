@@ -60,10 +60,11 @@ const ImageOverlay = ({ imageUrl, detections = [] }) => {
             ctx.strokeRect(sx, sy, sw, sh);
         });
 
-        // Pass 2: draw all labels on top so they're never buried under a box
+        // Pass 2: draw labels for top 3 by confidence only — avoids clutter with many detections
+        const topThree = [...scaled].sort((a, b) => (b.det.confidence ?? 0) - (a.det.confidence ?? 0)).slice(0, 3);
         ctx.font = 'bold 11px sans-serif';
         const padX = 4, padY = 3, textH = 11;
-        scaled.forEach(({ det, sx, sy, color }) => {
+        topThree.forEach(({ det, sx, sy, color }) => {
             const label = `${det.part} — ${det.damage_type}`;
             const textW = ctx.measureText(label).width;
             const bgW = textW + padX * 2;
