@@ -82,19 +82,6 @@ REPLACE_ONLY_PARTS = {
 }
 
 
-# ── ACV estimation (for total loss calculation) ───────────────────────────────
-# Straight-line depreciation: average new mid-size sedan ~$35,000
-# ~15% depreciation per year, floor at $3,000
-_ACV_BASE      = 35_000
-_DEPRECIATION  = 0.15
-_ACV_FLOOR     = 3_000
-
-def _estimate_acv(vehicle_year: int) -> float:
-    import datetime
-    age = max(0, datetime.datetime.now().year - vehicle_year)
-    acv = _ACV_BASE * ((1 - _DEPRECIATION) ** age)
-    return max(acv, _ACV_FLOOR)
-
 
 # ── Data loaders ──────────────────────────────────────────────────────────────
 
@@ -221,18 +208,16 @@ class CostEstimator:
         _LABOR_RATES = _load_labor_rates()
         _train_and_save()
 
-    def estimate(self, cv_damaged_parts: list, state: str = "",
-                 vehicle_year: int = 2021) -> dict:  # default: ~4yr old vehicle, ~$20k ACV
+    def estimate(self, cv_damaged_parts: list, state: str = "") -> dict:
         """
         Convert CV damaged_parts into a cost_output dict for llm_client.process_claim().
 
         Args:
             cv_damaged_parts: list of {part, damage_type, severity} from CV pipeline
             state:            2-letter state abbreviation for regional labor rate lookup
-            vehicle_year:     model year for ACV / total loss calculation
 
         Returns:
-            cost_output dict including total_loss flag
+            cost_output dict with per-part costs and totals
         """
         labor_rates = _get_labor_rates_for_state(state)
         le_part     = self._encoders["part"]
@@ -275,17 +260,10 @@ class CostEstimator:
 
         total_low  = sum(p["cost_range"][0] for p in result_parts)
         total_high = sum(p["cost_range"][1] for p in result_parts)
-        repair_mid = (total_low + total_high) / 2
-
-        # Total loss check: repair cost > 70% of ACV (industry standard threshold)
-        acv        = _estimate_acv(vehicle_year)
-        total_loss = repair_mid > (0.70 * acv)
 
         return {
-            "damaged_parts":         result_parts,
-            "total_cost_range":      [total_low, total_high],
-            "state":                 state.upper() if state else "",
-            "labor_rates":           labor_rates,
-            "acv_estimate":          round(acv),
-            "total_loss":            total_loss,
+            "damaged_parts":    result_parts,
+            "total_cost_range": [total_low, total_high],
+            "state":            state.upper() if state else "",
+            "labor_rates":      labor_rates,
         }

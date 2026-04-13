@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X, RotateCcw, Info, History, Download, Trash2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, AlertTriangle, Pencil, Check, X, RotateCcw, Info, History, Download, Trash2 } from 'lucide-react';
 import ImageOverlay from './ImageOverlay';
 
 // ── Client-side cost lookup (mirrors backend cost_estimator.py) ───────────────
@@ -141,7 +141,6 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
         stp_eligible,
         stp_reasoning,
         confidence_score,
-        total_loss,
         explanation,
         cost,
         claim_id,
@@ -318,19 +317,16 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                 {/* STP Banner */}
                 {stp_eligible != null && (
                     <div className={`p-4 rounded-xl border flex items-start gap-3 ${
-                        total_loss ? 'bg-red-900/30 border-red-700'
-                        : stp_eligible ? 'bg-green-900/30 border-green-700'
+                        stp_eligible ? 'bg-green-900/30 border-green-700'
                         : 'bg-yellow-900/30 border-yellow-700'
                     }`}>
-                        {total_loss
-                            ? <TrendingUp className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
-                            : stp_eligible
-                                ? <ShieldCheck className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
-                                : <ShieldAlert className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                        {stp_eligible
+                            ? <ShieldCheck className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                            : <ShieldAlert className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
                         }
                         <div>
-                            <p className={`font-bold text-sm ${total_loss ? 'text-red-400' : stp_eligible ? 'text-green-400' : 'text-yellow-400'}`}>
-                                {total_loss ? 'Total Loss' : stp_eligible ? 'Auto-Approved' : 'Adjuster Review Required'}
+                            <p className={`font-bold text-sm ${stp_eligible ? 'text-green-400' : 'text-yellow-400'}`}>
+                                {stp_eligible ? 'Auto-Approved' : 'Adjuster Review Required'}
                             </p>
                             {stp_reasoning && <p className="text-gray-300 text-xs mt-1">{stp_reasoning}</p>}
                         </div>
@@ -632,7 +628,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                                         return [
                                             esc(new Date(c.timestamp).toLocaleString()),
                                             esc(c.claim_id),
-                                            esc(c.total_loss ? 'Total Loss' : c.stp_eligible ? 'Auto-Approved' : 'Adjuster Review Required'),
+                                            esc(c.stp_eligible ? 'Auto-Approved' : 'Adjuster Review Required'),
                                             esc(c.requires_adjuster_review ? 'Yes' : 'No'),
                                             esc(parts),
                                             c.total_cost_range?.[0] ?? '',
@@ -666,11 +662,10 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                             <div key={c.claim_id} className="p-4 bg-gray-800 rounded-xl border border-gray-700 text-sm space-y-2">
                                 <div className="flex items-center justify-between">
                                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                                        c.total_loss ? 'bg-red-900/60 text-red-400'
-                                        : c.stp_eligible ? 'bg-green-900/60 text-green-400'
+                                        c.stp_eligible ? 'bg-green-900/60 text-green-400'
                                         : 'bg-yellow-900/60 text-yellow-400'
                                     }`}>
-                                        {c.total_loss ? 'Total Loss' : c.stp_eligible ? 'Auto-Approved' : 'Adjuster Review'}
+                                        {c.stp_eligible ? 'Auto-Approved' : 'Adjuster Review'}
                                     </span>
                                     <span className="text-gray-500 text-xs">
                                         {new Date(c.timestamp).toLocaleString()}
