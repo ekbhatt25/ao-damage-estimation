@@ -208,7 +208,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-2xl mx-auto bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl overflow-hidden shadow-2xl"
+            className="w-full max-w-4xl mx-auto bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl overflow-hidden shadow-2xl"
         >
             {/* Header */}
             <div className="p-8 border-b border-gray-700 bg-gradient-to-r from-blue-900/20 to-purple-900/20">
@@ -366,17 +366,19 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                 )}
 
                 {/* Detection cards */}
-                {detections.map((det, i) => {
-                    const isEditing  = editingIdx === i;
-                    const isOverride = !!overrides[i];
-                    const dispPart   = isEditing ? pendingEdit.part        : (overrides[i]?.part        ?? det.part);
-                    const dispDmg    = isEditing ? pendingEdit.damage_type : (overrides[i]?.damage_type ?? det.damage_type);
-                    const dispSev    = isEditing ? pendingEdit.severity    : (overrides[i]?.severity    ?? det.severity ?? "moderate");
-                    const partCost   = effectiveCost(i);
-                    const partAction = effectiveAction(i);
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {detections.map((det, i) => {
+                        const isEditing  = editingIdx === i;
+                        const isOverride = !!overrides[i];
+                        const dispPart   = isEditing ? pendingEdit.part        : (overrides[i]?.part        ?? det.part);
+                        const dispDmg    = isEditing ? pendingEdit.damage_type : (overrides[i]?.damage_type ?? det.damage_type);
+                        const dispSev    = isEditing ? pendingEdit.severity    : (overrides[i]?.severity    ?? det.severity ?? "moderate");
+                        const partCost   = effectiveCost(i);
+                        const partAction = effectiveAction(i);
+                        const isLastOdd  = detections.length % 2 !== 0 && i === detections.length - 1;
 
-                    return (
-                        <div key={i} className={`p-4 bg-gray-900/50 rounded-xl border space-y-3 ${isOverride ? 'border-orange-700/60' : 'border-gray-700'}`}>
+                        return (
+                            <div key={i} className={`p-4 bg-gray-900/50 rounded-xl border space-y-3 ${isOverride ? 'border-orange-700/60' : 'border-gray-700'} ${isLastOdd ? 'md:col-span-2 md:w-[calc(50%-0.5rem)] md:mx-auto w-full' : ''}`}>
 
                             {/* Card header */}
                             <div className="flex items-center justify-between">
@@ -462,7 +464,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                         </div>
                     );
                 })}
-
+                </div>
 
                 <div className="pt-2 border-t border-gray-700 space-y-3">
                     <button onClick={onReset}
