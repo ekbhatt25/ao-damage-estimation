@@ -271,7 +271,7 @@ def health():
     return {
         "status": "healthy",
         "models": "Mask R-CNN (parts) + YOLOv8m (damage) + GradientBoosting (cost)",
-        "llm": "gemini-3.1-flash-lite-preview" if _llm_available else "unavailable",
+        "llm": "gemini-2.5-flash" if _llm_available else "unavailable",
     }
 
 

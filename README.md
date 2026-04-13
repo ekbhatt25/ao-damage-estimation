@@ -25,7 +25,7 @@ Session-based claim history is stored in an append-only audit log and accessible
 | **YOLOv8m** | Object detection for damage type classification (6 classes, mAP@50 = 0.751) |
 | **YOLOv8n-cls** | Image classification for damage severity (minor / moderate / severe) |
 | **GradientBoosting Regressor** | ML cost estimation — predicts repair cost from part, damage type, and severity |
-| **Gemini Flash** | LLM for natural language damage explanation and STP reasoning (rule-based fallback if API key unavailable) |
+| **Gemini 2.5 Flash** | LLM for natural language damage explanation and STP reasoning (rule-based fallback if API key unavailable) |
 
 Mask R-CNN was fine-tuned using two-phase transfer learning (frozen backbone → full fine-tuning) with AMP and gradient checkpointing. YOLOv8m was fine-tuned on a labeled vehicle damage dataset. The severity classifier is sourced from `nezahatkorkmaz/car-damage-level-detection-yolov8`. The cost model is trained on repair cost estimates scaled by SCRS 2024 labor rate survey data (body $67/hr, paint $65/hr national medians; mechanical $95/hr).
 
@@ -260,7 +260,7 @@ Returns model load status and LLM availability.
 **Backend:** FastAPI, Uvicorn  
 **Computer Vision:** PyTorch, Mask R-CNN (ResNet-50-FPN), YOLOv8m, YOLOv8n-cls (Ultralytics), OpenCV, NumPy, Pillow, torchvision, pycocotools  
 **Cost Estimation:** scikit-learn (GradientBoostingRegressor), joblib, SCRS 2024 labor rate data  
-**LLM:** Gemini Flash, Google Generative AI SDK  
+**LLM:** Gemini 2.5 Flash, Google GenAI SDK (`google-genai`)  
 **Deployment:** Docker, Hugging Face Spaces, Vercel, Hugging Face Hub
 
 ## License
