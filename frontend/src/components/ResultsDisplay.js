@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X, RotateCcw, Info, History, Download } from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, TrendingUp, AlertTriangle, Pencil, Check, X, RotateCcw, Info, History, Download, Trash2 } from 'lucide-react';
 import ImageOverlay from './ImageOverlay';
 
 // ── Client-side cost lookup (mirrors backend cost_estimator.py) ───────────────
@@ -50,6 +50,7 @@ const STATE_OPTIONS = [
 ];
 const DAMAGE_OPTIONS = ["Dent","Scratch","Crack","Glass Shatter","Lamp Broken","Tire Flat"];
 const SEV_OPTIONS    = ["minor","moderate","severe"];
+const SEV_LABELS     = { minor: "Minor", moderate: "Moderate", severe: "Severe" };
 
 function calcCost(part, damageType, severity) {
     const [repairMid, replaceMid] = FALLBACK_COSTS[part] ?? [300, 600];
@@ -84,6 +85,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
     const [selectedState,   setSelectedState]   = useState(results?.state || '');
     const [stateCosts,      setStateCosts]      = useState({});   // idx → { cost_range, action }
     const [stateLoading,    setStateLoading]    = useState(false);
+    const [removedIdxs,     setRemovedIdxs]     = useState(new Set());
 
     const refetchAllCosts = async (newState) => {
         if (!cost?.damaged_parts?.length) return;
@@ -145,8 +147,9 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
         inference_ms,
     } = results;
 
-    // Effective cost range: adjuster override > state-adjusted > original AI
+    // Effective cost range: adjuster override > state-adjusted > original AI; null if removed
     const effectiveCost = (i) => {
+        if (removedIdxs.has(i)) return null;
         if (overrides[i])  return overrides[i].cost_range;
         if (stateCosts[i]) return stateCosts[i].cost_range;
         return cost?.damaged_parts?.[i]?.cost_range ?? null;
@@ -247,12 +250,16 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
 
                 {/* Image overlay */}
                 {imageUrl && detections.length > 0 && (
-                    <ImageOverlay imageUrl={imageUrl} detections={detections.map((det, i) => ({
-                        ...det,
-                        severity: overrides[i]?.severity ?? det.severity,
-                        part:     overrides[i]?.part        ?? det.part,
-                        damage_type: overrides[i]?.damage_type ?? det.damage_type,
-                    }))} />
+                    <ImageOverlay imageUrl={imageUrl} detections={detections
+                        .map((det, i) => ({
+                            ...det,
+                            _idx: i,
+                            severity:    overrides[i]?.severity    ?? det.severity,
+                            part:        overrides[i]?.part        ?? det.part,
+                            damage_type: overrides[i]?.damage_type ?? det.damage_type,
+                        }))
+                        .filter((_, i) => !removedIdxs.has(i))
+                    } />
                 )}
 
                 {/* Fraud Flags */}
@@ -331,7 +338,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                                             {Object.keys(overrides).length > 0 ? 'Adjuster adjusted' : `Rates: ${selectedState}`}
                                         </p>
                                         <button
-                                            onClick={() => { setOverrides({}); setStateCosts({}); }}
+                                            onClick={() => { setOverrides({}); setStateCosts({}); setRemovedIdxs(new Set()); }}
                                             className="text-xs text-gray-400 hover:text-white flex items-center gap-1 transition-colors"
                                             title="Reset all overrides to original AI estimates"
                                         >
@@ -375,19 +382,31 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                     const partCost   = effectiveCost(i);
                     const partAction = effectiveAction(i);
 
+                    const isRemoved = removedIdxs.has(i);
+
                     return (
-                        <div key={i} className={`p-4 bg-gray-900/50 rounded-xl border space-y-3 ${isOverride ? 'border-orange-700/60' : 'border-gray-700'}`}>
+                        <div key={i} className={`p-4 bg-gray-900/50 rounded-xl border space-y-3 ${isRemoved ? 'border-red-900/40 opacity-50' : isOverride ? 'border-orange-700/60' : 'border-gray-700'}`}>
 
                             {/* Card header */}
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <span className="text-white font-medium text-sm">Detection {i + 1}</span>
-                                    {isOverride && <span className="text-xs text-orange-400 bg-orange-900/40 px-2 py-0.5 rounded-full">Adjuster adjusted</span>}
+                                    {isRemoved && <span className="text-xs text-red-400 bg-red-900/40 px-2 py-0.5 rounded-full">Removed by adjuster</span>}
+                                    {!isRemoved && isOverride && <span className="text-xs text-orange-400 bg-orange-900/40 px-2 py-0.5 rounded-full">Adjuster adjusted</span>}
                                 </div>
-                                {!isEditing
-                                    ? <button onClick={() => startEdit(i, det)} className="text-gray-400 hover:text-white transition-colors" title="Edit detection">
-                                        <Pencil className="w-4 h-4" />
+                                {isRemoved
+                                    ? <button onClick={() => setRemovedIdxs(prev => { const n = new Set(prev); n.delete(i); return n; })} className="text-gray-400 hover:text-white transition-colors" title="Restore detection">
+                                        <RotateCcw className="w-4 h-4" />
                                       </button>
+                                    : !isEditing
+                                    ? <div className="flex gap-2">
+                                        <button onClick={() => startEdit(i, det)} className="text-gray-400 hover:text-white transition-colors" title="Edit detection">
+                                            <Pencil className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => setRemovedIdxs(prev => new Set([...prev, i]))} className="text-gray-400 hover:text-red-400 transition-colors" title="Remove detection">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
                                     : <div className="flex gap-2">
                                         <button onClick={() => applyEdit(i)} className="text-green-400 hover:text-green-300 transition-colors" title="Apply">
                                             <Check className="w-4 h-4" />
@@ -404,8 +423,8 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                                 }
                             </div>
 
-                            {/* Part + Damage type */}
-                            <div className="grid grid-cols-2 gap-4">
+                            {/* Part + Damage type — hidden when removed */}
+                            {!isRemoved && <><div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
                                     <label className="text-xs font-medium text-gray-400">Part</label>
                                     {isEditing
@@ -435,7 +454,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                                     {isEditing
                                         ? <select value={pendingEdit.severity} onChange={e => setPendingEdit(p => ({ ...p, severity: e.target.value }))}
                                             className="w-full bg-gray-800 border border-gray-600 text-white text-sm rounded-lg px-2 py-1">
-                                            {SEV_OPTIONS.map(s => <option key={s}>{s}</option>)}
+                                            {SEV_OPTIONS.map(s => <option key={s} value={s}>{SEV_LABELS[s]}</option>)}
                                           </select>
                                         : <div className="flex items-center gap-2">
                                             <span className="text-white capitalize">{dispSev ?? '—'}</span>
@@ -459,6 +478,7 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                                     </p>
                                 </div>
                             )}
+                            </>}
                         </div>
                     );
                 })}
