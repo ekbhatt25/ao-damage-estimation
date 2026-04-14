@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, AlertTriangle, Pencil, Check, X, RotateCcw, Info, History, Download, Trash2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, AlertTriangle, Pencil, Check, X, RotateCcw, Info, History, Download, Trash2, FileText } from 'lucide-react';
 import ImageOverlay from './ImageOverlay';
 
 // ── Client-side cost lookup (mirrors backend cost_estimator.py) ───────────────
@@ -130,6 +130,196 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
         } finally {
             setHistoryLoading(false);
         }
+    };
+
+    const exportClaimPDF = () => {
+        if (!imageUrl) return;
+        const img = new window.Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = async () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+
+            const currentDetections = (results?.detections || []).map((det, i) => ({
+                ...det,
+                _idx: i,
+                severity:    overrides[i]?.severity    ?? det.severity,
+                part:        overrides[i]?.part        ?? det.part,
+                damage_type: overrides[i]?.damage_type ?? det.damage_type,
+            })).filter((_, i) => !removedIdxs.has(i));
+
+            const sorted = [...currentDetections]
+                .filter(d => d.bbox)
+                .sort((a, b) => (a.confidence ?? 0) - (b.confidence ?? 0));
+
+            const scaleFactor = Math.max(1, img.naturalWidth / 600); 
+            const SEVERITY_COLORS = { minor: '#EAB308', moderate: '#F97316', severe: '#EF4444' };
+            const getColor = (severity) => SEVERITY_COLORS[severity?.toLowerCase()] ?? '#3B82F6';
+
+            sorted.forEach(det => {
+                const [x1, y1, x2, y2] = det.bbox;
+                const sw = x2 - x1;
+                const sh = y2 - y1;
+                const color = getColor(det.severity);
+
+                ctx.fillStyle = color + '22';
+                ctx.fillRect(x1, y1, sw, sh);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2 * scaleFactor;
+                ctx.strokeRect(x1, y1, sw, sh);
+            });
+
+            const topThree = [...sorted].sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0)).slice(0, 3);
+            const fontSize = Math.round(11 * scaleFactor);
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            const padX = 4 * scaleFactor;
+            const padY = 3 * scaleFactor;
+
+            topThree.forEach((det) => {
+                const [x1, y1] = det.bbox;
+                const color = getColor(det.severity);
+                const label = `${det.part} — ${det.damage_type}`;
+                
+                const textW = ctx.measureText(label).width;
+                const bgW = textW + padX * 2;
+                const bgH = fontSize + padY * 2;
+
+                const labelY = y1 > bgH + 2 ? y1 - bgH - 2 : y1 + 2;
+                const labelX = Math.min(x1, canvas.width - bgW - 2);
+
+                ctx.fillStyle = color;
+                ctx.fillRect(labelX, labelY, bgW, bgH);
+                ctx.fillStyle = '#000000';
+                ctx.fillText(label, labelX + padX, labelY + fontSize + padY - 2);
+            });
+
+            // Initialize jsPDF
+            const { jsPDF } = await import('jspdf');
+            const doc = new jsPDF({ format: 'letter', unit: 'pt' });
+            let cursorY = 40;
+
+            doc.setFontSize(18);
+            doc.text("Vehicle Damage Claim Report", 40, cursorY);
+            cursorY += 20;
+
+            doc.setFontSize(10);
+            doc.text(`Claim ID: ${results?.claim_id || 'N/A'}`, 40, cursorY);
+            cursorY += 15;
+            doc.text(`Date: ${new Date().toLocaleString()}`, 40, cursorY);
+            cursorY += 30;
+
+            // Add Annotated Image
+            const pdfStr = canvas.toDataURL('image/jpeg', 0.8);
+            const aspect = canvas.height / canvas.width;
+            let imgW = 532; // Fit within margins (612 - 80)
+            let imgH = imgW * aspect;
+            if (imgH > 350) { 
+                imgH = 350;
+                imgW = imgH / aspect;
+            }
+            
+            doc.addImage(pdfStr, 'JPEG', 40, cursorY, imgW, imgH);
+            cursorY += imgH + 30;
+
+            const checkPageBreak = (needed) => {
+                if (cursorY + needed > 750) {
+                    doc.addPage();
+                    cursorY = 40;
+                }
+            };
+
+            // STP Decision
+            checkPageBreak(50);
+            doc.setFontSize(14);
+            doc.setTextColor(0);
+            doc.text("STP Decision", 40, cursorY);
+            cursorY += 20;
+            doc.setFontSize(10);
+            const stpText = results?.stp_eligible === true ? "Auto-Approved" : (results?.stp_eligible === false ? "Adjuster Review Required" : "N/A");
+            doc.text(`Status: ${stpText}`, 40, cursorY);
+            cursorY += 15;
+            if (results?.stp_reasoning) {
+                const splitStp = doc.splitTextToSize(`Reasoning: ${results.stp_reasoning}`, 532);
+                doc.text(splitStp, 40, cursorY);
+                cursorY += splitStp.length * 12 + 5;
+            }
+            cursorY += 10;
+
+            // Fraud Flags
+            if (results?.fraud_flags?.length > 0) {
+                checkPageBreak(50);
+                doc.setFontSize(14);
+                doc.text("Fraud Signals Detected", 40, cursorY);
+                cursorY += 20;
+                doc.setFontSize(10);
+                results.fraud_flags.forEach(flag => {
+                    checkPageBreak(15);
+                    doc.setTextColor(200, 0, 0); // Red for fraud warnings
+                    const sf = doc.splitTextToSize(`• ${flag}`, 532);
+                    doc.text(sf, 40, cursorY);
+                    cursorY += sf.length * 12 + 3;
+                });
+                doc.setTextColor(0);
+                cursorY += 15;
+            }
+
+            // Part Level Breakdown
+            checkPageBreak(50);
+            doc.setFontSize(14);
+            doc.text("Part-Level Breakdown", 40, cursorY);
+            cursorY += 20;
+            doc.setFontSize(10);
+
+            let allParts = [];
+            cost?.damaged_parts?.forEach((dp, i) => {
+                if (!removedIdxs.has(i)) {
+                    allParts.push({
+                        part: overrides[i]?.part ?? dp.part,
+                        damage_type: overrides[i]?.damage_type ?? dp.damage_type,
+                        severity: overrides[i]?.severity ?? dp.severity ?? 'moderate',
+                        cost_range: effectiveCost(i) ?? [0,0],
+                        action: effectiveAction(i) ?? 'repair',
+                        source: overrides[i] ? 'Adjusted' : 'AI'
+                    });
+                }
+            });
+            addedParts.forEach(ap => {
+                allParts.push({
+                    part: ap.part,
+                    damage_type: ap.damage_type,
+                    severity: ap.severity,
+                    cost_range: ap.cost_range ?? [0,0],
+                    action: ap.action ?? 'repair',
+                    source: 'Added by Adjuster'
+                });
+            });
+
+            if (allParts.length === 0) {
+                doc.text("No damaged parts to report.", 40, cursorY);
+            } else {
+                allParts.forEach((p, idx) => {
+                    checkPageBreak(20);
+                    const line = `${idx + 1}. ${p.part} - ${p.damage_type} (${p.severity}) | Action: ${p.action} | Cost: $${fmt(p.cost_range[0])}-$${fmt(p.cost_range[1])} [${p.source}]`;
+                    const splitP = doc.splitTextToSize(line, 532);
+                    doc.text(splitP, 40, cursorY);
+                    cursorY += splitP.length * 12 + 3;
+                });
+            }
+
+            // Total Cost
+            if (displayTotal) {
+                checkPageBreak(30);
+                cursorY += 10;
+                doc.setFontSize(12);
+                doc.text(`Total Estimated Cost: $${fmt(displayTotal[0])} - $${fmt(displayTotal[1])}`, 40, cursorY);
+            }
+
+            doc.save(`claim_report_${results?.claim_id || 'export'}.pdf`);
+        };
+        img.src = imageUrl;
     };
 
     if (!results) return null;
@@ -607,6 +797,13 @@ const ResultsDisplay = ({ results, imageUrl, onReset, sessionId = '' }) => {
                             <h3 className="text-white font-bold text-lg">Claim History</h3>
                         </div>
                         <div className="flex items-center gap-3">
+                            <button
+                                onClick={exportClaimPDF}
+                                className="text-gray-400 hover:text-white transition-colors"
+                                title="Export Claim as PDF"
+                            >
+                                <FileText className="w-4 h-4" />
+                            </button>
                             <button
                                 onClick={() => {
                                     const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
