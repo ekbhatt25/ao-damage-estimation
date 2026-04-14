@@ -20,41 +20,55 @@ const SESSION_ID = getSessionId();
 
 function App() {
   const [appState, setAppState] = useState('idle');
-  const [image, setImage] = useState(null);
-  const [results, setResults] = useState(null);
+  const [images, setImages] = useState([]);
+  const [resultsList, setResultsList] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [state, setState] = useState('');
   const abortControllerRef = React.useRef(null);
 
-  const handleUpload = async (file) => {
-    setImage(URL.createObjectURL(file));
+  const handleUpload = async (files) => {
+    const newImages = files.map(f => URL.createObjectURL(f));
+    setImages(newImages);
     setAppState('analyzing');
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('session_id', SESSION_ID);
-    formData.append('state', state);
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+    const fetchPromises = files.map(async (file) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('session_id', SESSION_ID);
+      formData.append('state', state);
+
+      try {
+        const response = await fetch(`${API_URL}/detect`, {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal,
+        });
+        return await response.json();
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          throw error;
+        }
+        console.error('Error:', error);
+        return { error: "Failed to connect to backend. Is it running?" };
+      }
+    });
 
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_URL}/detect`, {
-        method: 'POST',
-        body: formData,
-        signal: controller.signal,
-      });
-
-      const data = await response.json();
-      setResults(data);
+      const newResultsList = await Promise.all(fetchPromises);
+      setResultsList(newResultsList);
+      setCurrentIndex(0);
       setAppState('complete');
-
     } catch (error) {
       if (error.name === 'AbortError') {
         setAppState('idle');
       } else {
-        console.error('Error:', error);
-        setResults({ error: "Failed to connect to backend. Is it running?" });
+        console.error('Error in processing:', error);
+        setResultsList([{ error: "Failed to connect to backend. Is it running?" }]);
         setAppState('complete');
       }
     }
@@ -66,8 +80,9 @@ function App() {
 
   const handleReset = () => {
     abortControllerRef.current?.abort();
-    setImage(null);
-    setResults(null);
+    setImages([]);
+    setResultsList([]);
+    setCurrentIndex(0);
     setAppState('idle');
   };
 
@@ -173,8 +188,38 @@ function App() {
               <LoadingOverlay onCancel={handleCancel} />
             )}
 
-            {appState === 'complete' && (
-              <ResultsDisplay results={results} imageUrl={image} onReset={handleReset} sessionId={SESSION_ID} />
+            {appState === 'complete' && resultsList.length > 0 && (
+              <div className="w-full">
+                <ResultsDisplay 
+                  key={currentIndex}
+                  results={resultsList[currentIndex]} 
+                  imageUrl={images[currentIndex]} 
+                  onReset={handleReset} 
+                  sessionId={SESSION_ID} 
+                />
+                
+                {resultsList.length > 1 && (
+                  <div className="flex flex-col items-center gap-2 mt-8">
+                    <p className="text-gray-400 font-medium">Viewing analysis for Image {currentIndex + 1} of {resultsList.length}</p>
+                    <div className="flex justify-center items-center gap-4 bg-gray-900/50 p-2 rounded-xl border border-gray-700">
+                      <button
+                        onClick={() => setCurrentIndex(c => Math.max(0, c - 1))}
+                        disabled={currentIndex === 0}
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:opacity-50 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => setCurrentIndex(c => Math.min(resultsList.length - 1, c + 1))}
+                        disabled={currentIndex === resultsList.length - 1}
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:opacity-50 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </AnimatePresence>
         </main>

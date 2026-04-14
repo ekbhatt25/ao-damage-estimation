@@ -5,17 +5,17 @@ import { motion } from 'framer-motion';
 
 const ImageUpload = ({ onUpload }) => {
   const handleFileChange = (event) => {
-    const file = event.target.files && event.target.files[0];
-    if (file) {
-      onUpload(file);
+    const files = Array.from(event.target.files);
+    if (files.length > 0) {
+      onUpload(files);
     }
   };
 
   const handleDrop = (event) => {
     event.preventDefault();
-    const file = event.dataTransfer.files && event.dataTransfer.files[0];
-    if (file) {
-      onUpload(file);
+    const files = Array.from(event.dataTransfer.files);
+    if (files.length > 0) {
+      onUpload(files);
     }
   };
 
@@ -37,6 +37,7 @@ const ImageUpload = ({ onUpload }) => {
         <input
           type="file"
           accept="image/*"
+          multiple
           onChange={handleFileChange}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
@@ -45,7 +46,7 @@ const ImageUpload = ({ onUpload }) => {
             <Upload className="w-8 h-8 text-blue-400" />
           </div>
           <div>
-            <h3 className="text-xl font-semibold text-white mb-2">Upload Car Image</h3>
+            <h3 className="text-xl font-semibold text-white mb-2">Upload Car Image(s)</h3>
             <p className="text-black">Drag and drop or click to browse</p>
           </div>
           <div className="flex gap-2 text-sm text-black">
