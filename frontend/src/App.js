@@ -190,35 +190,32 @@ function App() {
 
             {appState === 'complete' && resultsList.length > 0 && (
               <div className="w-full">
-                <ResultsDisplay 
-                  key={currentIndex}
-                  results={resultsList[currentIndex]} 
-                  imageUrl={images[currentIndex]} 
-                  onReset={handleReset} 
-                  sessionId={SESSION_ID} 
-                />
-                
                 {resultsList.length > 1 && (
-                  <div className="flex flex-col items-center gap-2 mt-8">
-                    <p className="text-gray-400 font-medium">Viewing analysis for Image {currentIndex + 1} of {resultsList.length}</p>
-                    <div className="flex justify-center items-center gap-4 bg-gray-900/50 p-2 rounded-xl border border-gray-700">
-                      <button
-                        onClick={() => setCurrentIndex(c => Math.max(0, c - 1))}
-                        disabled={currentIndex === 0}
-                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:opacity-50 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        onClick={() => setCurrentIndex(c => Math.min(resultsList.length - 1, c + 1))}
-                        disabled={currentIndex === resultsList.length - 1}
-                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:opacity-50 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
-                    </div>
+                  <div className="flex items-center justify-between mb-4">
+                    <button
+                      onClick={() => setCurrentIndex(c => Math.max(0, c - 1))}
+                      disabled={currentIndex === 0}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:opacity-50 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      ← Previous
+                    </button>
+                    <p className="text-black font-semibold text-lg">Image {currentIndex + 1}</p>
+                    <button
+                      onClick={() => setCurrentIndex(c => Math.min(resultsList.length - 1, c + 1))}
+                      disabled={currentIndex === resultsList.length - 1}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:opacity-50 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      Next →
+                    </button>
                   </div>
                 )}
+                <ResultsDisplay
+                  key={currentIndex}
+                  results={resultsList[currentIndex]}
+                  imageUrl={images[currentIndex]}
+                  onReset={handleReset}
+                  sessionId={SESSION_ID}
+                />
               </div>
             )}
           </AnimatePresence>
