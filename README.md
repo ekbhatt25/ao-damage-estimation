@@ -57,15 +57,14 @@ IoU / Mask Overlap Cross-Reference
     │
     ▼
 Cost Estimation (GradientBoosting ML model)
-    ├── Repair cost per part
+    ├── Repair/replace decision per part (glass/severe damage → replace, else repair)
     ├── Regional labor rates by state — body / mechanical / paint (SCRS 2024 survey data)
-    ├── Total cost range (±15% band)
-    └── Total loss flag (repair cost > 70% of estimated ACV)
+    └── Total cost range (±15% band)
     │
     ▼
-Gemini Flash — natural language explanation + STP eligibility decision
-    ├── STP criteria: cost < $1,500, confidence > 60%, not a total loss
-    └── Auto-escalation to adjuster if confidence < 40% or total loss
+Gemini 2.5 Flash — natural language explanation + STP eligibility decision
+    ├── STP criteria: cost < $1,500, confidence > 60%
+    └── Auto-escalation to adjuster if confidence < 40%
     │
     ▼
 Audit Trail (JSONL) — claim ID, session ID, timestamp, model version, full decision log
@@ -110,7 +109,7 @@ python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install fastapi "uvicorn[standard]" python-multipart pillow numpy \
     opencv-python-headless pycocotools ultralytics scikit-learn joblib \
-    google-generativeai python-dotenv torch torchvision \
+    google-genai python-dotenv torch torchvision \
     --index-url https://download.pytorch.org/whl/cpu
 uvicorn api:app --reload --port 8000
 ```
@@ -220,14 +219,12 @@ Upload a vehicle photo and receive structured damage detections, cost estimates,
     ],
     "total_cost_range": [373, 505],
     "state": "MI",
-    "labor_rates": {"body": 67.0, "mechanical": 95.0, "paint": 65.0},
-    "acv_estimate": 20000,
-    "total_loss": false
+    "labor_rates": {"body": 67.0, "mechanical": 95.0, "paint": 65.0}
   },
-  "explanation": "Your vehicle sustained a moderate dent to the front bumper...",
+  "explanation": "The vehicle sustained a moderate dent to the front bumper requiring repair...",
   "confidence_score": 0.81,
   "stp_eligible": true,
-  "stp_reasoning": "Claim eligible for auto-approval: cost $439 under $1,500 threshold, 81% confidence meets requirement, not a total loss.",
+  "stp_reasoning": "Claim eligible for auto-approval: cost $439 under $1,500 threshold, 81% confidence meets requirement.",
   "requires_adjuster_review": false,
   "override_allowed": true,
   "model_version": "1.0.0",

@@ -67,30 +67,25 @@ def _rule_based_stp(cost_output: dict, detections: list) -> dict:
     confidences = [d.get("confidence", 0.5) for d in detections]
     confidence = max(confidences) if confidences else 0.5
     severities = [d.get("severity", "minor") for d in detections]
-    total_loss = cost_output.get("total_loss", False)
-
-    cost_ok = total_cost < 1500
+    cost_ok       = total_cost < 1500
     confidence_ok = confidence > 0.60
-    not_total_loss = not total_loss
 
-    stp_eligible = cost_ok and confidence_ok and not_total_loss
+    stp_eligible = cost_ok and confidence_ok
 
     if stp_eligible:
         reasoning = (
             f"Claim eligible for auto-approval: cost ${total_cost:.0f} under $1,500, "
-            f"{confidence:.0%} confidence, not a total loss."
+            f"{confidence:.0%} confidence."
         )
     else:
         reasons = []
-        if total_loss:
-            reasons.append("total loss")
         if not cost_ok:
             reasons.append(f"cost ${total_cost:.0f} exceeds $1,500")
         if not confidence_ok:
             reasons.append(f"{confidence:.0%} confidence below 60%")
         reasoning = f"Manual review required: {', '.join(reasons)}."
 
-    requires_review = not stp_eligible or confidence < 0.40 or total_loss
+    requires_review = not stp_eligible or confidence < 0.40
 
     parts_list = ", ".join({d["part"] for d in detections})
     explanation = (
@@ -107,7 +102,6 @@ def _rule_based_stp(cost_output: dict, detections: list) -> dict:
         "stp_eligible": stp_eligible,
         "stp_reasoning": reasoning,
         "requires_adjuster_review": requires_review,
-        "total_loss": total_loss,
         "override_allowed": True,
         "model_version": "1.0.0",
     }
@@ -207,7 +201,6 @@ async def detect(
             "stp_eligible": llm_output.get("stp_eligible"),
             "stp_reasoning": llm_output.get("stp_reasoning"),
             "requires_adjuster_review": llm_output.get("requires_adjuster_review"),
-            "total_loss": llm_output.get("total_loss", False),
             "override_allowed": True,
             "model_version": "1.0.0",
             "fraud_flags": fraud_flags,
