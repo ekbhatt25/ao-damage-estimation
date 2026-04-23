@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ImageUpload from './components/ImageUpload';
 import LoadingOverlay from './components/LoadingOverlay';
 import ResultsDisplay from './components/ResultsDisplay';
+import { generatePDF, generateCSV } from './utils/reportGenerator';
 import './App.css';
 import aoLogo from './Auto_Owners_Logo_full_circle.jpg';
 import aoTextLogo from './ao-text-logo.jpg';
@@ -84,6 +85,18 @@ function App() {
     setResultsList([]);
     setCurrentIndex(0);
     setAppState('idle');
+  };
+
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const handleDownloadPDF = async (indices) => {
+    setPdfLoading(true);
+    await generatePDF(resultsList, images, indices);
+    setPdfLoading(false);
+  };
+
+  const handleDownloadCSV = (indices) => {
+    generateCSV(resultsList, images, indices);
   };
 
   return (
@@ -209,6 +222,41 @@ function App() {
                     </button>
                   </div>
                 )}
+
+                {/* Download bar */}
+                <div className="flex justify-end gap-2 mb-3">
+                  <button
+                    onClick={() => handleDownloadCSV([currentIndex])}
+                    className="px-3 py-1.5 text-xs font-medium bg-white/10 hover:bg-white/20 text-black border border-gray-600 rounded-lg transition-colors"
+                  >
+                    ↓ CSV{resultsList.length > 1 ? ' (This)' : ''}
+                  </button>
+                  <button
+                    onClick={() => handleDownloadPDF([currentIndex])}
+                    disabled={pdfLoading}
+                    className="px-3 py-1.5 text-xs font-medium bg-white/10 hover:bg-white/20 text-black border border-gray-600 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {pdfLoading ? 'Generating…' : `↓ PDF${resultsList.length > 1 ? ' (This)' : ''}`}
+                  </button>
+                  {resultsList.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => handleDownloadCSV(resultsList.map((_, i) => i))}
+                        className="px-3 py-1.5 text-xs font-medium bg-white/10 hover:bg-white/20 text-black border border-gray-600 rounded-lg transition-colors"
+                      >
+                        ↓ CSV (All)
+                      </button>
+                      <button
+                        onClick={() => handleDownloadPDF(resultsList.map((_, i) => i))}
+                        disabled={pdfLoading}
+                        className="px-3 py-1.5 text-xs font-medium bg-white/10 hover:bg-white/20 text-black border border-gray-600 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        {pdfLoading ? 'Generating…' : '↓ PDF (All)'}
+                      </button>
+                    </>
+                  )}
+                </div>
+
                 <ResultsDisplay
                   key={currentIndex}
                   results={resultsList[currentIndex]}
