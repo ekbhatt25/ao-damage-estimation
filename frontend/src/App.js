@@ -229,14 +229,14 @@ function App() {
                     onClick={() => handleDownloadCSV([currentIndex])}
                     className="px-3 py-1.5 text-xs font-medium bg-white/10 hover:bg-white/20 text-black border border-gray-600 rounded-lg transition-colors"
                   >
-                    ↓ CSV{resultsList.length > 1 ? ' (This)' : ''}
+                    ↓ CSV{resultsList.length > 1 ? ` (Image ${currentIndex + 1})` : ''}
                   </button>
                   <button
                     onClick={() => handleDownloadPDF([currentIndex])}
                     disabled={pdfLoading}
                     className="px-3 py-1.5 text-xs font-medium bg-white/10 hover:bg-white/20 text-black border border-gray-600 rounded-lg transition-colors disabled:opacity-50"
                   >
-                    {pdfLoading ? 'Generating…' : `↓ PDF${resultsList.length > 1 ? ' (This)' : ''}`}
+                    {pdfLoading ? 'Generating…' : `↓ PDF${resultsList.length > 1 ? ` (Image ${currentIndex + 1})` : ''}`}
                   </button>
                   {resultsList.length > 1 && (
                     <>
