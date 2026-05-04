@@ -9,6 +9,12 @@ pinned: false
 
 # Auto-Owners Vehicle Damage Estimator
 
+## For Auto-Owners Operations
+
+- **To run the system:** See [Option A — Docker](#option-a--run-with-docker-recommended) below. The only required configuration is a `GEMINI_API_KEY` in `backend/.env` (copy `backend/.env.example`). Without it, STP decisions fall back to rule-based logic automatically.
+- **To update labor rates:** Edit `backend/data/labor_rates.csv` (body/mechanical/paint rates by state), then run `python -c "from cost_estimator import CostEstimator; CostEstimator.retrain()"` from the `backend/` directory. No code changes needed.
+- **To push a backend update to production:** `git push space main` (deploys to Hugging Face Spaces). Frontend auto-deploys to Vercel on every push to `main`.
+
 ## Description
 
 This project automates vehicle damage assessment for Auto-Owners Insurance using a multi-model computer vision, machine learning, and generative AI pipeline. A user selects their state, uploads a photo of a damaged vehicle, and the system identifies which parts are damaged, classifies the damage type and severity, estimates repair costs using regional labor rates, and produces a straight-through processing (STP) eligibility decision.
@@ -250,6 +256,14 @@ Returns claim history for a session from the audit log.
 ### `GET /health`
 
 Returns model load status and LLM availability.
+
+## Known Limitations
+
+- **Inference speed** — Models run on CPU by default (~800ms per image). A GPU-enabled deployment (e.g., Hugging Face Spaces T4) reduces this significantly.
+- **Gemini API dependency** — Natural language explanations and LLM-assisted STP reasoning require a valid `GEMINI_API_KEY`. The system degrades gracefully to rule-based STP logic without it, but explanation quality is reduced.
+- **Cost model is synthetically trained** — The GradientBoosting cost estimator is trained on estimates derived from SCRS 2024 labor rate survey data, not historical Auto-Owners claim data. Accuracy improves if retrained on real claim records.
+- **Fraud detection is passive/heuristic** — The three fraud signals (pixel variance, EXIF editing software, duplicate perceptual hash) flag suspicious images but are not a substitute for adjuster review. High-risk claims are automatically escalated.
+- **22-part detection vocabulary** — The Mask R-CNN model detects the 22 car parts it was trained on. Damage to unlisted parts will not be detected.
 
 ## Technologies Used
 
