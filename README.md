@@ -9,7 +9,7 @@ pinned: false
 
 # Auto-Owners Vehicle Damage Estimator
 
-## For Auto-Owners Operations
+## For Auto-Owners Insurance
 
 - **To run the system:** See [Option A — Docker](#option-a--run-with-docker-recommended) below. The only required configuration is a `GEMINI_API_KEY` in `backend/.env` (copy `backend/.env.example`). Without it, STP decisions fall back to rule-based logic automatically.
 - **To update labor rates:** Edit `backend/data/labor_rates.csv` (body/mechanical/paint rates by state), then run `python -c "from cost_estimator import CostEstimator; CostEstimator.retrain()"` from the `backend/` directory. No code changes needed.
